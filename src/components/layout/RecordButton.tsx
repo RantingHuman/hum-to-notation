@@ -46,6 +46,13 @@ export function RecordButton() {
         </div>
       )}
 
+      {/* "Add a layer first" hint when disabled */}
+      {isIdle && noLayer && (
+        <div className="fixed bottom-28 left-1/2 -translate-x-1/2 z-20 bg-gray-800 border border-gray-600 text-gray-300 text-xs px-3 py-1.5 rounded-full shadow-lg whitespace-nowrap">
+          Add a layer (→) to enable recording
+        </div>
+      )}
+
       {/* Processing overlay (full-width on desktop too) */}
       {isProcessing && (
         <div className="fixed inset-0 bg-black/60 flex flex-col items-center justify-center z-40">
