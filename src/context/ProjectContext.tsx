@@ -17,6 +17,7 @@ interface ProjectContextValue {
   selectLayer: (layerId: string) => void;
   deleteLayer: (layerId: string) => void;
   updateLayerNotes: (layerId: string, notes: Note[]) => void;
+  clearLayerNotes: (layerId: string) => void;
   shiftOctave: (layerId: string, direction: 1 | -1) => void;
   setMetronomeMode: (mode: MetronomeMode) => void;
   setTempo: (bpm: number) => void;
@@ -126,6 +127,16 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const clearLayerNotes = useCallback((layerId: string) => {
+    setCurrentProject((prev) => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        layers: prev.layers.map((l) => (l.id === layerId ? { ...l, notes: [] } : l)),
+      };
+    });
+  }, []);
+
   const shiftOctave = useCallback((layerId: string, direction: 1 | -1) => {
     setCurrentProject((prev) => {
       if (!prev) return null;
@@ -168,6 +179,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         selectLayer,
         deleteLayer,
         updateLayerNotes,
+        clearLayerNotes,
         shiftOctave,
         setMetronomeMode,
         setTempo,

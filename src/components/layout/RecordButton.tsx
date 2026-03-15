@@ -1,5 +1,5 @@
 import { useProjectContext } from '../../context/ProjectContext';
-import { useRecording } from '../../hooks/useRecording';
+import { useRecordingContext } from '../../context/RecordingContext';
 import { MicPermissionGuide } from '../MicPermissionGuide';
 
 function formatTime(ms: number): string {
@@ -21,7 +21,7 @@ export function RecordButton() {
     stopRecording,
     dismissMicDenied,
     dismissError,
-  } = useRecording();
+  } = useRecordingContext();
 
   // Only render in workspace when a project is open
   if (!currentProject) return null;
