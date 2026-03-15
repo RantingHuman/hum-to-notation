@@ -23,6 +23,20 @@ function getDB(): IDBPDatabase<HumDB> {
   return db;
 }
 
+export class StorageQuotaError extends Error {
+  constructor() {
+    super('Storage quota exceeded. Export your projects and delete old ones to free space.');
+    this.name = 'StorageQuotaError';
+  }
+}
+
+function wrapQuotaError(err: unknown): never {
+  if (err instanceof DOMException && err.name === 'QuotaExceededError') {
+    throw new StorageQuotaError();
+  }
+  throw err;
+}
+
 export async function createProject(name: string): Promise<Project> {
   const now = new Date().toISOString();
   const project: Project = {
@@ -35,7 +49,7 @@ export async function createProject(name: string): Promise<Project> {
     updatedAt: now,
     layers: [],
   };
-  await getDB().add('projects', project);
+  await getDB().add('projects', project).catch(wrapQuotaError);
   return project;
 }
 
@@ -51,7 +65,7 @@ export async function getAllProjects(): Promise<ProjectSummary[]> {
 }
 
 export async function updateProject(project: Project): Promise<void> {
-  await getDB().put('projects', { ...project, updatedAt: new Date().toISOString() });
+  await getDB().put('projects', { ...project, updatedAt: new Date().toISOString() }).catch(wrapQuotaError);
 }
 
 export async function deleteProject(id: string): Promise<void> {

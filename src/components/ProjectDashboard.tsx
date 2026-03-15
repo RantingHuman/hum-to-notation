@@ -1,5 +1,10 @@
 import { useState } from 'react';
 import { useProjectContext } from '../context/ProjectContext';
+import { BrowserWarning } from './BrowserWarning';
+import { LoadingSpinner } from './common/LoadingSpinner';
+import { checkBrowserSupport } from '../utils/browserCompat';
+
+const browserSupport = checkBrowserSupport(); // run once at module load
 
 export function ProjectDashboard() {
   const { projectList, isLoading, createProject, openProject, deleteProject } =
@@ -7,6 +12,7 @@ export function ProjectDashboard() {
   const [newName, setNewName] = useState('');
   const [creating, setCreating] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [warningDismissed, setWarningDismissed] = useState(false);
 
   const handleCreate = async () => {
     const name = newName.trim() || 'Untitled Project';
@@ -23,7 +29,7 @@ export function ProjectDashboard() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white text-lg animate-pulse">Loading...</div>
+        <LoadingSpinner size="lg" />
       </div>
     );
   }
@@ -41,13 +47,21 @@ export function ProjectDashboard() {
       </header>
 
       <main className="flex-1 px-4 py-8 max-w-2xl mx-auto w-full">
-        {/* Browser-only warning */}
-        <div className="bg-yellow-900/50 border border-yellow-700 rounded-lg px-4 py-3 mb-6 text-yellow-200 text-sm flex gap-2">
-          <span>⚠️</span>
-          <span>
-            Projects are saved in your browser only. Export to keep a permanent copy.
-          </span>
-        </div>
+        {/* Browser compatibility warning */}
+        {!warningDismissed && (
+          <BrowserWarning
+            support={browserSupport}
+            onDismiss={browserSupport.supported ? () => setWarningDismissed(true) : undefined}
+          />
+        )}
+
+        {/* Storage-only reminder (only when no other warning shown) */}
+        {(warningDismissed || browserSupport.warnings.length === 0) && (
+          <div className="bg-yellow-900/50 border border-yellow-700 rounded-lg px-4 py-3 mb-6 text-yellow-200 text-sm flex gap-2">
+            <span>⚠️</span>
+            <span>Projects are saved in your browser only. Export to keep a permanent copy.</span>
+          </div>
+        )}
 
         {/* Create new project */}
         <div className="flex items-center justify-between mb-4">

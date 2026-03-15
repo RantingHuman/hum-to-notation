@@ -2,6 +2,8 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import type { Project, ProjectSummary, Layer } from '../types/project';
 import type { Instrument, MetronomeMode, Note, TimeSignature } from '../types/music';
 import * as storage from '../services/storage';
+import { StorageQuotaError } from '../services/storage';
+import { useToast } from './ToastContext';
 
 interface ProjectContextValue {
   currentProject: Project | null;
@@ -32,6 +34,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { showToast } = useToast();
 
   // Initialize DB and load project list
   useEffect(() => {
@@ -50,7 +53,13 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     if (!currentProject) return;
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
     saveTimeout.current = setTimeout(() => {
-      storage.updateProject(currentProject).catch(console.error);
+      storage.updateProject(currentProject).catch((err) => {
+        if (err instanceof StorageQuotaError) {
+          showToast(err.message, 'warning');
+        } else {
+          console.error('Auto-save failed:', err);
+        }
+      });
     }, 500);
     return () => {
       if (saveTimeout.current) clearTimeout(saveTimeout.current);

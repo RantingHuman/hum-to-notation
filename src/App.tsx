@@ -2,6 +2,8 @@ import { useRef } from 'react';
 import { ProjectProvider, useProjectContext } from './context/ProjectContext';
 import { RecordingProvider } from './context/RecordingContext';
 import { PlaybackProvider } from './context/PlaybackContext';
+import { ToastProvider } from './context/ToastContext';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { ProjectDashboard } from './components/ProjectDashboard';
 import { TopBar } from './components/layout/TopBar';
 import { ControlsArea } from './components/layout/ControlsArea';
@@ -36,9 +38,13 @@ function AppInner() {
 
 function App() {
   return (
-    <ProjectProvider>
-      <AppInner />
-    </ProjectProvider>
+    <ErrorBoundary>
+      <ToastProvider>
+        <ProjectProvider>
+          <AppInner />
+        </ProjectProvider>
+      </ToastProvider>
+    </ErrorBoundary>
   );
 }
 

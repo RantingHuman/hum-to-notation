@@ -1,6 +1,7 @@
 import { useProjectContext } from '../../context/ProjectContext';
 import { useRecordingContext } from '../../context/RecordingContext';
 import { MicPermissionGuide } from '../MicPermissionGuide';
+import { ProcessingOverlay } from '../common/ProcessingOverlay';
 
 function formatTime(ms: number): string {
   const totalSec = Math.floor(ms / 1000);
@@ -53,15 +54,9 @@ export function RecordButton() {
         </div>
       )}
 
-      {/* Processing overlay (full-width on desktop too) */}
+      {/* Processing overlay */}
       {isProcessing && (
-        <div className="fixed inset-0 bg-black/60 flex flex-col items-center justify-center z-40">
-          <div className="bg-gray-800 rounded-xl px-8 py-6 flex flex-col items-center gap-3 border border-gray-600">
-            <div className="w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
-            <p className="text-white font-medium">Processing your melody…</p>
-            <p className="text-gray-400 text-sm">This will only take a moment</p>
-          </div>
-        </div>
+        <ProcessingOverlay message="Processing your melody…" subMessage="This will only take a moment" />
       )}
 
       {/* Countdown overlay */}

@@ -8,11 +8,13 @@ import {
 import { PitchDetector } from '../services/pitchDetector';
 import { quantizeToNotes } from '../services/quantizer';
 import { Metronome } from '../services/metronome';
+import { useToast } from '../context/ToastContext';
 
 export type RecordingState = 'idle' | 'countdown' | 'recording' | 'processing';
 
 export function useRecording() {
   const { currentProject, selectedLayerId, updateLayerNotes } = useProjectContext();
+  const { showToast } = useToast();
   const [recordingState, setRecordingState] = useState<RecordingState>('idle');
   const [elapsedMs, setElapsedMs] = useState(0);
   const [countdownBeat, setCountdownBeat] = useState(0);
@@ -58,15 +60,17 @@ export function useRecording() {
     try {
       const notes = quantizeToNotes(rawEvents, project.tempo, project.timeSignature);
       if (notes.filter((n) => !n.isRest).length === 0) {
-        setError(
-          'No notes detected. Make sure your microphone is working and hum clearly.'
+        showToast(
+          'No notes detected. Make sure your microphone is working and hum clearly.',
+          'warning'
         );
+        setError(null);
       } else {
         setError(null);
       }
       updateLayerNotes(layerId, notes);
     } catch {
-      setError('Processing failed. Please try recording again.');
+      showToast('Processing failed. Please try recording again.', 'error');
     }
 
     setRecordingState('idle');
