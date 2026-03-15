@@ -1,8 +1,14 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { ViewToggle } from '../notation/ViewToggle';
-import { SheetMusicView } from '../notation/SheetMusicView';
-import { TabView } from '../notation/TabView';
 import { useProjectContext } from '../../context/ProjectContext';
+import { LoadingSpinner } from '../common/LoadingSpinner';
+
+const SheetMusicView = lazy(() =>
+  import('../notation/SheetMusicView').then((m) => ({ default: m.SheetMusicView }))
+);
+const TabView = lazy(() =>
+  import('../notation/TabView').then((m) => ({ default: m.TabView }))
+);
 
 type View = 'sheet' | 'tab';
 
@@ -31,7 +37,13 @@ export function NotationDisplay({ notationContainerRef }: Props) {
         ref={notationContainerRef as React.RefObject<HTMLDivElement>}
         className="flex-1 bg-white overflow-auto p-2"
       >
-        {view === 'sheet' ? <SheetMusicView /> : <TabView />}
+        <Suspense fallback={
+          <div className="flex items-center justify-center py-16">
+            <LoadingSpinner size="md" color="border-gray-400" />
+          </div>
+        }>
+          {view === 'sheet' ? <SheetMusicView /> : <TabView />}
+        </Suspense>
       </div>
     </div>
   );

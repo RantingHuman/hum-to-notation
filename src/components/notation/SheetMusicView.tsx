@@ -1,8 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { memo, useEffect, useRef } from 'react';
 import { useProjectContext } from '../../context/ProjectContext';
 import { renderSheetMusic } from '../../services/notationRenderer';
 
-export function SheetMusicView() {
+export const SheetMusicView = memo(function SheetMusicView() {
   const { currentProject, selectedLayerId } = useProjectContext();
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -46,4 +46,4 @@ export function SheetMusicView() {
   }
 
   return <div ref={containerRef} className="w-full overflow-x-auto" />;
-}
+});

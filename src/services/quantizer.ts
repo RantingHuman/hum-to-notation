@@ -13,11 +13,15 @@ interface Segment {
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
+/** Snap a beat value to the nearest multiple of gridSize. */
 function snapToGrid(beat: number, gridSize: number): number {
   return Math.round(beat / gridSize) * gridSize;
 }
 
-/** Snap a raw duration to the nearest "nice" duration in beats. */
+/**
+ * Snap a raw duration (in beats) to the nearest "nice" duration.
+ * Options: 8th, quarter, dotted quarter, half, dotted half, whole.
+ */
 function snapDuration(raw: number): number {
   const options = [0.5, 1, 1.5, 2, 3, 4];
   return options.reduce((best, opt) =>
@@ -25,12 +29,28 @@ function snapDuration(raw: number): number {
   );
 }
 
+/** Return the median value of a numeric array. */
 function median(arr: number[]): number {
   const sorted = [...arr].sort((a, b) => a - b);
   return sorted[Math.floor(sorted.length / 2)];
 }
 
 // ── Main export ────────────────────────────────────────────────────────────────
+
+/**
+ * Convert raw pitch detection events into a quantized Note[] array.
+ *
+ * Pipeline:
+ * 1. Group consecutive frames with similar pitch (±1 semitone) into segments.
+ * 2. Discard blips shorter than MIN_NOTE_DURATION_MS.
+ * 3. Convert segment timestamps to beats using tempo.
+ * 4. Snap start and duration to an 8th-note grid.
+ * 5. Insert rest notes to fill gaps ≥ 0.5 beats between notes.
+ *
+ * @param rawEvents  - Pitch events from PitchDetector, in timestamp order.
+ * @param tempo      - Project BPM, used for ms → beats conversion.
+ * @param timeSignature - Used to cap note duration at measure boundaries.
+ */
 
 export function quantizeToNotes(
   rawEvents: RawPitchEvent[],

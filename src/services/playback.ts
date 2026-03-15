@@ -4,6 +4,18 @@ import { midiToFrequency } from '../utils/noteUtils';
 
 type Synth = Tone.PluckSynth | Tone.MonoSynth;
 
+/**
+ * Plays back a layer's notes using Tone.js synthesis.
+ *
+ * Scheduling strategy: notes are scheduled against Tone.now() (the Web Audio
+ * hardware clock) rather than the Transport. This avoids any conflict with the
+ * metronome (which uses the Transport), and makes stopping trivial — disposing
+ * the synth immediately silences all pending scheduled audio.
+ *
+ * Instruments:
+ *   - guitar: PluckSynth (Karplus-Strong string model)
+ *   - bass:   MonoSynth with sawtooth oscillator + lowpass filter
+ */
 export class PlaybackEngine {
   private synth: Synth | null = null;
   private currentInstrument: Instrument | null = null;

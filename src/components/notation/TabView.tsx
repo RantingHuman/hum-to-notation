@@ -1,8 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { memo, useEffect, useRef } from 'react';
 import { useProjectContext } from '../../context/ProjectContext';
 import { renderTabNotation } from '../../services/notationRenderer';
 
-export function TabView() {
+export const TabView = memo(function TabView() {
   const { currentProject, selectedLayerId } = useProjectContext();
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -45,4 +45,4 @@ export function TabView() {
   }
 
   return <div ref={containerRef} className="w-full overflow-x-auto" />;
-}
+});
