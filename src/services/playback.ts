@@ -127,6 +127,13 @@ export class PlaybackEngine {
     await Tone.start();
 
     const rig = this.ensureRig(instrument);
+
+    // Reverb generates its impulse response asynchronously; notes scheduled
+    // before the IR is ready are silently dropped by the Web Audio engine.
+    // Awaiting here ensures the audio chain is fully connected before we
+    // read Tone.now() and schedule any notes.
+    await rig.reverb.ready;
+
     const beatsPerSec = tempo / 60;
     const baseTime = Tone.now() + 0.05; // small scheduling offset
 
