@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useProjectContext } from '../context/ProjectContext';
 import { BrowserWarning } from './BrowserWarning';
 import { LoadingSpinner } from './common/LoadingSpinner';
@@ -7,8 +8,9 @@ import { checkBrowserSupport } from '../utils/browserCompat';
 const browserSupport = checkBrowserSupport(); // run once at module load
 
 export function ProjectDashboard() {
-  const { projectList, isLoading, createProject, openProject, deleteProject } =
+  const { projectList, isLoading, createProject, deleteProject } =
     useProjectContext();
+  const navigate = useNavigate();
   const [newName, setNewName] = useState('');
   const [creating, setCreating] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
@@ -18,7 +20,8 @@ export function ProjectDashboard() {
     const name = newName.trim() || 'Untitled Project';
     setCreating(false);
     setNewName('');
-    await createProject(name);
+    const project = await createProject(name);
+    if (project) navigate(`/project/${project.id}`);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -129,7 +132,7 @@ export function ProjectDashboard() {
 
                 <div className="flex gap-2 shrink-0">
                   <button
-                    onClick={() => openProject(project.id)}
+                    onClick={() => navigate(`/project/${project.id}`)}
                     className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded text-sm font-medium transition-colors min-h-[44px]"
                   >
                     Open

@@ -10,7 +10,7 @@ interface ProjectContextValue {
   projectList: ProjectSummary[];
   selectedLayerId: string | null;
   isLoading: boolean;
-  createProject: (name: string) => Promise<void>;
+  createProject: (name: string) => Promise<Project>;
   openProject: (id: string) => Promise<void>;
   closeProject: () => void;
   deleteProject: (id: string) => Promise<void>;
@@ -66,7 +66,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     };
   }, [currentProject]);
 
-  const createProject = useCallback(async (name: string) => {
+  const createProject = useCallback(async (name: string): Promise<Project> => {
     const project = await storage.createProject(name);
     setCurrentProject(project);
     setSelectedLayerId(null);
@@ -74,6 +74,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       { id: project.id, name: project.name, updatedAt: project.updatedAt },
       ...prev,
     ]);
+    return project;
   }, []);
 
   const openProject = useCallback(async (id: string) => {

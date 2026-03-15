@@ -5,6 +5,9 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // Required for SPA deep linking: serve index.html for all routes
+  server: { historyApiFallback: true },
+  preview: { historyApiFallback: true },
   build: {
     rolldownOptions: {
       output: {
