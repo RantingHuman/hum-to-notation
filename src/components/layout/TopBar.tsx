@@ -1,7 +1,12 @@
 import { useState } from 'react';
 import { useProjectContext } from '../../context/ProjectContext';
+import { ExportMenu } from '../ExportMenu';
 
-export function TopBar() {
+interface Props {
+  notationContainerRef: React.RefObject<HTMLElement | null>;
+}
+
+export function TopBar({ notationContainerRef }: Props) {
   const { currentProject, closeProject, updateCurrentProject } = useProjectContext();
   const [editing, setEditing] = useState(false);
   const [nameInput, setNameInput] = useState('');
@@ -55,7 +60,10 @@ export function TopBar() {
               </button>
             )}
           </div>
-          <span className="text-xs text-gray-500 hidden sm:block">Auto-saved</span>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-gray-500 hidden sm:block">Auto-saved</span>
+            <ExportMenu notationContainerRef={notationContainerRef} />
+          </div>
         </>
       ) : (
         <h1 className="text-xl font-bold text-purple-400">🎵 Hum to Notation</h1>

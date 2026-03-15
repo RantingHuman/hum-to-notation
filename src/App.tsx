@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { ProjectProvider, useProjectContext } from './context/ProjectContext';
 import { RecordingProvider } from './context/RecordingContext';
 import { PlaybackProvider } from './context/PlaybackContext';
@@ -9,14 +10,16 @@ import { LayerPanel } from './components/layout/LayerPanel';
 import { RecordButton } from './components/layout/RecordButton';
 
 function Workspace() {
+  const notationContainerRef = useRef<HTMLElement>(null);
+
   return (
     <RecordingProvider>
       <PlaybackProvider>
         <div className="min-h-screen bg-gray-900 flex flex-col">
-          <TopBar />
+          <TopBar notationContainerRef={notationContainerRef} />
           <ControlsArea />
           <div className="flex-1 flex flex-col md:flex-row overflow-hidden" style={{ minHeight: 0 }}>
-            <NotationDisplay />
+            <NotationDisplay notationContainerRef={notationContainerRef} />
             <LayerPanel />
           </div>
           <RecordButton />

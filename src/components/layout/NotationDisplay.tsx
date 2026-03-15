@@ -6,7 +6,11 @@ import { useProjectContext } from '../../context/ProjectContext';
 
 type View = 'sheet' | 'tab';
 
-export function NotationDisplay() {
+interface Props {
+  notationContainerRef: React.RefObject<HTMLElement | null>;
+}
+
+export function NotationDisplay({ notationContainerRef }: Props) {
   const { currentProject } = useProjectContext();
   const [view, setView] = useState<View>('sheet');
 
@@ -23,7 +27,10 @@ export function NotationDisplay() {
       </div>
 
       {/* Notation area */}
-      <div className="flex-1 bg-white overflow-auto p-2">
+      <div
+        ref={notationContainerRef as React.RefObject<HTMLDivElement>}
+        className="flex-1 bg-white overflow-auto p-2"
+      >
         {view === 'sheet' ? <SheetMusicView /> : <TabView />}
       </div>
     </div>
