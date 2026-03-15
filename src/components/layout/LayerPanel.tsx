@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useProjectContext } from '../../context/ProjectContext';
 import { useRecordingContext } from '../../context/RecordingContext';
+import { usePlaybackContext } from '../../context/PlaybackContext';
 import { InstrumentSelector, INSTRUMENT_OPTIONS } from '../controls/InstrumentSelector';
 
 export function LayerPanel() {
@@ -14,6 +15,7 @@ export function LayerPanel() {
     shiftOctave,
   } = useProjectContext();
   const { startRecording, recordingState } = useRecordingContext();
+  const { playLayer, stop: stopPlayback, playingLayerId } = usePlaybackContext();
   const [addingLayer, setAddingLayer] = useState(false);
 
   if (!currentProject) return null;
@@ -76,7 +78,9 @@ export function LayerPanel() {
                 key={layer.id}
                 onClick={() => selectLayer(layer.id)}
                 className={`rounded-lg p-3 border cursor-pointer transition-all ${
-                  isSelected
+                  playingLayerId === layer.id
+                    ? 'border-green-500 bg-green-900/20 ring-1 ring-green-500/50'
+                    : isSelected
                     ? 'border-purple-500 bg-purple-900/30'
                     : 'border-gray-600 bg-gray-700 hover:border-gray-500'
                 }`}
@@ -140,6 +144,35 @@ export function LayerPanel() {
                     </button>
                   </div>
                 </div>
+
+                {/* Play / Stop row (only when layer has notes) */}
+                {hasNotes && (
+                  <div
+                    className="flex items-center gap-2 mt-2"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {playingLayerId === layer.id ? (
+                      <button
+                        onClick={stopPlayback}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-1 rounded bg-red-700 hover:bg-red-600 text-white text-xs transition-colors"
+                        title="Stop playback"
+                      >
+                        <span className="w-2.5 h-2.5 bg-white rounded-sm inline-block" />
+                        Stop
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => playLayer(layer.id)}
+                        disabled={recordingState !== 'idle'}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-1 rounded bg-green-700 hover:bg-green-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs transition-colors"
+                        title={recordingState !== 'idle' ? 'Stop recording first' : 'Play this layer'}
+                      >
+                        <span className="text-xs">▶</span>
+                        Play
+                      </button>
+                    )}
+                  </div>
+                )}
 
                 {/* Re-record button (only when has notes and idle) */}
                 {hasNotes && isSelected && isIdle && (
