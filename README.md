@@ -4,6 +4,8 @@ A client-side web app that captures microphone audio, detects pitch in real-time
 
 No backend. No sign-up. Everything runs in your browser.
 
+See it in action: https://hum-to-notation.netlify.app/
+
 ## Features
 
 - **Record from microphone** — count-in metronome, up to 2 minutes per layer
