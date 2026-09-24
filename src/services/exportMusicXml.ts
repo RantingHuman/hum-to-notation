@@ -1,5 +1,6 @@
 import type { Project } from '../types/project';
 import type { Note } from '../types/music';
+import { groupNotesIntoMeasures } from '../utils/measureUtils';
 import { midiToPitch, durationToMusicXmlType } from '../utils/musicXmlUtils';
 
 const DIVISIONS = 8; // eighth note = 1 unit
@@ -32,25 +33,6 @@ function noteToXml(note: Note, octaveShift: number): string {
         </note>`;
 }
 
-function groupIntoMeasures(notes: Note[], beatsPerMeasure: number): Note[][] {
-  const measures: Note[][] = [];
-  let current: Note[] = [];
-
-  for (const note of notes) {
-    const measureIndex = Math.floor(note.startBeat / beatsPerMeasure);
-    while (measures.length < measureIndex) {
-      measures.push([]);
-    }
-    if (measureIndex > measures.length - 1 && current.length > 0) {
-      measures.push(current);
-      current = [];
-    }
-    current.push(note);
-  }
-  if (current.length > 0) measures.push(current);
-  return measures;
-}
-
 export function exportProjectToMusicXml(project: Project): Blob {
   const { numerator, denominator } = project.timeSignature;
   const microsecondsPerBeat = Math.round(60_000_000 / project.tempo);
@@ -58,7 +40,7 @@ export function exportProjectToMusicXml(project: Project): Blob {
   const partsXml = project.layers.map((layer, layerIdx) => {
     const partId = `P${layerIdx + 1}`;
     const clef = layer.instrument === 'bass' ? '<sign>F</sign><line>4</line>' : '<sign>G</sign><line>2</line>';
-    const measures = groupIntoMeasures(layer.notes, numerator);
+    const measures = groupNotesIntoMeasures(layer.notes, numerator);
 
     const measuresXml = measures.map((measureNotes, mIdx) => {
       const attributesXml = mIdx === 0 ? `

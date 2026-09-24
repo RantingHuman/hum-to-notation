@@ -10,6 +10,7 @@ import {
 } from 'vexflow';
 import type { Note, TimeSignature } from '../types/music';
 import type { Instrument } from '../types/music';
+import { groupNotesIntoMeasures } from '../utils/measureUtils';
 import { midiToTab } from '../utils/tabUtils';
 
 // ── MIDI / duration helpers ───────────────────────────────────────────────────
@@ -40,34 +41,6 @@ function beatsToVexDuration(beats: number): VexDuration {
 
 function makeDurationString(vd: VexDuration, isRest: boolean): string {
   return vd.duration + (vd.dots ? 'd' : '') + (isRest ? 'r' : '');
-}
-
-// ── Measure grouping ──────────────────────────────────────────────────────────
-
-function groupIntoMeasures(notes: Note[], beatsPerMeasure: number): Note[][] {
-  if (notes.length === 0) return [];
-  const measures: Note[][] = [];
-  let current: Note[] = [];
-
-  for (const note of notes) {
-    const measureIndex = Math.floor(note.startBeat / beatsPerMeasure);
-    if (measureIndex > measures.length) {
-      // Fill empty measures
-      while (measures.length < measureIndex) {
-        measures.push([{
-          midiNumber: 0, startBeat: measures.length * beatsPerMeasure,
-          durationBeats: beatsPerMeasure, isRest: true,
-        }]);
-      }
-      current = [];
-    } else if (measureIndex > measures.length - 1 && current.length > 0) {
-      measures.push(current);
-      current = [];
-    }
-    current.push(note);
-  }
-  if (current.length > 0) measures.push(current);
-  return measures;
 }
 
 function padMeasure(notes: Note[], beatsPerMeasure: number, measureStartBeat: number): Note[] {
@@ -107,7 +80,7 @@ export function renderSheetMusic(
   const clef = instrument === 'bass' ? 'bass' : 'treble';
   const timeSigStr = `${timeSignature.numerator}/${timeSignature.denominator}`;
 
-  const allMeasures = groupIntoMeasures(notes, beatsPerMeasure);
+  const allMeasures = groupNotesIntoMeasures(notes, beatsPerMeasure);
   if (allMeasures.length === 0) return;
 
   const containerWidth = container.clientWidth || 700;
@@ -218,7 +191,7 @@ export function renderTabNotation(
 
   const beatsPerMeasure = timeSignature.numerator;
   const numStrings = instrument === 'guitar' ? 6 : 4;
-  const allMeasures = groupIntoMeasures(notes, beatsPerMeasure);
+  const allMeasures = groupNotesIntoMeasures(notes, beatsPerMeasure);
   if (allMeasures.length === 0) return;
 
   const containerWidth = container.clientWidth || 700;
