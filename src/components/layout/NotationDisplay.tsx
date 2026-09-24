@@ -1,5 +1,6 @@
 import { lazy, Suspense, useState } from 'react';
 import { ViewToggle } from '../notation/ViewToggle';
+import { NoteEditor } from '../notation/NoteEditor';
 import { useProjectContext } from '../../context/ProjectContext';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 
@@ -45,6 +46,8 @@ export function NotationDisplay({ notationContainerRef }: Props) {
           {view === 'sheet' ? <SheetMusicView /> : <TabView />}
         </Suspense>
       </div>
+
+      <NoteEditor />
     </div>
   );
 }
