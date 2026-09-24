@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useProjectContext } from '../../context/ProjectContext';
 import { midiToNoteName } from '../../utils/noteUtils';
 import {
@@ -7,6 +7,12 @@ import {
   NOTE_EDITOR_GRID,
   updateNoteAt,
 } from '../../utils/noteEditorUtils';
+import {
+  commitNoteHistory,
+  createNoteHistory,
+  redoNoteHistory,
+  undoNoteHistory,
+} from '../../utils/noteHistory';
 
 function formatBeat(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
@@ -21,15 +27,43 @@ export function NoteEditor() {
   const selectedLayer = currentProject?.layers.find((layer) => layer.id === selectedLayerId);
   const notes = selectedLayer?.notes ?? [];
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [history, setHistory] = useState(() => createNoteHistory(notes));
+  const lastAppliedNotesRef = useRef<typeof notes | null>(null);
 
   useEffect(() => {
     setSelectedIndex((current) => Math.min(current, Math.max(0, notes.length - 1)));
   }, [selectedLayerId, notes.length]);
 
+  useEffect(() => {
+    if (lastAppliedNotesRef.current === notes) {
+      lastAppliedNotesRef.current = null;
+      return;
+    }
+    setHistory(createNoteHistory(notes));
+  }, [selectedLayerId, notes]);
+
   if (!selectedLayer) return null;
 
   const applyNotes = (nextNotes: typeof notes) => {
+    lastAppliedNotesRef.current = nextNotes;
+    setHistory((current) => commitNoteHistory(current, nextNotes));
     updateLayerNotes(selectedLayer.id, nextNotes);
+  };
+
+  const handleUndo = () => {
+    const nextHistory = undoNoteHistory(history);
+    if (nextHistory === history) return;
+    lastAppliedNotesRef.current = nextHistory.present;
+    setHistory(nextHistory);
+    updateLayerNotes(selectedLayer.id, nextHistory.present);
+  };
+
+  const handleRedo = () => {
+    const nextHistory = redoNoteHistory(history);
+    if (nextHistory === history) return;
+    lastAppliedNotesRef.current = nextHistory.present;
+    setHistory(nextHistory);
+    updateLayerNotes(selectedLayer.id, nextHistory.present);
   };
 
   const changeNote = (index: number, changes: Parameters<typeof updateNoteAt>[2]) => {
@@ -57,12 +91,30 @@ export function NoteEditor() {
           <h2 className="text-white text-sm font-semibold">Review notes</h2>
           <p className="text-gray-500 text-xs">Correct pitch and timing before export</p>
         </div>
-        <button
-          onClick={handleAddNote}
-          className="bg-purple-600 hover:bg-purple-700 text-white text-xs px-3 py-1.5 rounded min-h-8"
-        >
-          + Add note
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={handleUndo}
+            disabled={history.past.length === 0}
+            className="bg-gray-700 hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs px-2 py-1.5 rounded min-h-8"
+            title="Undo last note edit"
+          >
+            Undo
+          </button>
+          <button
+            onClick={handleRedo}
+            disabled={history.future.length === 0}
+            className="bg-gray-700 hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs px-2 py-1.5 rounded min-h-8"
+            title="Redo note edit"
+          >
+            Redo
+          </button>
+          <button
+            onClick={handleAddNote}
+            className="bg-purple-600 hover:bg-purple-700 text-white text-xs px-3 py-1.5 rounded min-h-8"
+          >
+            + Add note
+          </button>
+        </div>
       </div>
 
       {notes.length === 0 ? (
