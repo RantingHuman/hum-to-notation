@@ -1,6 +1,6 @@
 import type { Project } from '../types/project';
 import type { Note } from '../types/music';
-import { groupNotesIntoMeasures } from '../utils/measureUtils';
+import { getMeasureLengthBeats, groupNotesIntoMeasures } from '../utils/measureUtils';
 import { midiToPitch, durationToMusicXmlType } from '../utils/musicXmlUtils';
 
 const DIVISIONS = 8; // eighth note = 1 unit
@@ -40,7 +40,10 @@ export function exportProjectToMusicXml(project: Project): Blob {
   const partsXml = project.layers.map((layer, layerIdx) => {
     const partId = `P${layerIdx + 1}`;
     const clef = layer.instrument === 'bass' ? '<sign>F</sign><line>4</line>' : '<sign>G</sign><line>2</line>';
-    const measures = groupNotesIntoMeasures(layer.notes, numerator);
+    const measures = groupNotesIntoMeasures(
+      layer.notes,
+      getMeasureLengthBeats(project.timeSignature)
+    );
 
     const measuresXml = measures.map((measureNotes, mIdx) => {
       const attributesXml = mIdx === 0 ? `

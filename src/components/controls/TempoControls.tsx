@@ -36,10 +36,8 @@ function TapTempoButton({ onBpm }: { onBpm: (bpm: number) => void }) {
   const { bpm, tap } = useTapTempo();
 
   const handleTap = () => {
-    tap();
-    // bpm reflects the *previous* tap calculation; after tap() the hook
-    // schedules a re-render. We apply the new bpm on the next tap once it's known.
-    if (bpm !== null) onBpm(bpm);
+    const calculatedBpm = tap();
+    if (calculatedBpm !== null) onBpm(calculatedBpm);
   };
 
   return (

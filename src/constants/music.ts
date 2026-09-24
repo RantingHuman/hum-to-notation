@@ -27,6 +27,6 @@ export const GUITAR_OPEN_STRINGS = [64, 59, 55, 50, 45, 40];
 export const BASS_OPEN_STRINGS = [43, 38, 33, 28];
 
 export const CLARITY_THRESHOLD = 0.85;
-export const MIN_NOTE_DURATION_MS = 100;
+export const MIN_NOTE_DURATION_MS = 80;
 export const SILENCE_GAP_MS = 100;
 export const MAX_RECORDING_DURATION_MS = 120_000; // 2 minutes

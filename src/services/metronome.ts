@@ -46,7 +46,7 @@ export class Metronome {
     transport.cancel();
 
     transport.bpm.value = this.bpm;
-    transport.timeSignature = this.timeSignature.numerator;
+    transport.timeSignature = [this.timeSignature.numerator, this.timeSignature.denominator];
 
     if (this.mode === 'audio') {
       this.synth = new Tone.Synth({
@@ -58,6 +58,7 @@ export class Metronome {
 
     const beatsPerMeasure = this.timeSignature.numerator;
     const beatIndices = Array.from({ length: beatsPerMeasure }, (_, i) => i);
+    const subdivision = this.timeSignature.denominator === 8 ? '8n' : '4n';
 
     this.sequence = new Tone.Sequence<number>(
       (time, beatIndex) => {
@@ -74,7 +75,7 @@ export class Metronome {
         }, time);
       },
       beatIndices,
-      '4n'
+      subdivision
     );
 
     this.sequence.start(0);

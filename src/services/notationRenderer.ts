@@ -10,7 +10,7 @@ import {
 } from 'vexflow';
 import type { Note, TimeSignature } from '../types/music';
 import type { Instrument } from '../types/music';
-import { groupNotesIntoMeasures } from '../utils/measureUtils';
+import { getMeasureLengthBeats, groupNotesIntoMeasures } from '../utils/measureUtils';
 import { midiToTab } from '../utils/tabUtils';
 
 // ── MIDI / duration helpers ───────────────────────────────────────────────────
@@ -76,11 +76,11 @@ export function renderSheetMusic(
 ): void {
   container.innerHTML = '';
 
-  const beatsPerMeasure = timeSignature.numerator;
+  const measureLengthBeats = getMeasureLengthBeats(timeSignature);
   const clef = instrument === 'bass' ? 'bass' : 'treble';
   const timeSigStr = `${timeSignature.numerator}/${timeSignature.denominator}`;
 
-  const allMeasures = groupNotesIntoMeasures(notes, beatsPerMeasure);
+  const allMeasures = groupNotesIntoMeasures(notes, measureLengthBeats);
   if (allMeasures.length === 0) return;
 
   const containerWidth = container.clientWidth || 700;
@@ -90,7 +90,7 @@ export function renderSheetMusic(
   const firstStaveWidth = drawWidth - 80; // account for clef + timesig
   const avgNoteWidth = 50;
   const notesPerLine = Math.max(1, Math.floor(firstStaveWidth / avgNoteWidth));
-  const measuresPerLine = Math.max(1, Math.floor(notesPerLine / beatsPerMeasure));
+  const measuresPerLine = Math.max(1, Math.floor(notesPerLine / measureLengthBeats));
 
   const lines: Note[][][] = [];
   for (let i = 0; i < allMeasures.length; i += measuresPerLine) {
@@ -136,8 +136,8 @@ export function renderSheetMusic(
         ctx.restore();
       }
 
-      const measureStart = globalMeasureIdx * beatsPerMeasure;
-      const paddedNotes = padMeasure(measureNotes, beatsPerMeasure, measureStart);
+      const measureStart = globalMeasureIdx * measureLengthBeats;
+      const paddedNotes = padMeasure(measureNotes, measureLengthBeats, measureStart);
 
       const vexNotes = paddedNotes.map((note) => {
         const effectiveMidi = note.isRest
@@ -165,7 +165,7 @@ export function renderSheetMusic(
       if (vexNotes.length === 0) return;
 
       const voice = new Voice({
-        numBeats: beatsPerMeasure,
+        numBeats: timeSignature.numerator,
         beatValue: timeSignature.denominator,
       }).setMode(2); // SOFT mode — don't throw on beat count mismatch
 
@@ -189,9 +189,9 @@ export function renderTabNotation(
 ): void {
   container.innerHTML = '';
 
-  const beatsPerMeasure = timeSignature.numerator;
+  const measureLengthBeats = getMeasureLengthBeats(timeSignature);
   const numStrings = instrument === 'guitar' ? 6 : 4;
-  const allMeasures = groupNotesIntoMeasures(notes, beatsPerMeasure);
+  const allMeasures = groupNotesIntoMeasures(notes, measureLengthBeats);
   if (allMeasures.length === 0) return;
 
   const containerWidth = container.clientWidth || 700;
@@ -225,8 +225,8 @@ export function renderTabNotation(
       stave.setNumLines(numStrings);
       stave.setContext(ctx).draw();
 
-      const measureStart = globalMeasureIdx * beatsPerMeasure;
-      const paddedNotes = padMeasure(measureNotes, beatsPerMeasure, measureStart);
+      const measureStart = globalMeasureIdx * measureLengthBeats;
+      const paddedNotes = padMeasure(measureNotes, measureLengthBeats, measureStart);
 
       const tabNotes = paddedNotes.map((note) => {
         const vd = beatsToVexDuration(note.durationBeats);
@@ -247,7 +247,7 @@ export function renderTabNotation(
       if (tabNotes.length === 0) return;
 
       const voice = new Voice({
-        numBeats: beatsPerMeasure,
+        numBeats: timeSignature.numerator,
         beatValue: timeSignature.denominator,
       }).setMode(2);
 

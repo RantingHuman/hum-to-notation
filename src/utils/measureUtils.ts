@@ -1,4 +1,18 @@
 import type { Note } from '../types/music';
+import type { TimeSignature } from '../types/music';
+
+export function getMeasureLengthBeats(timeSignature: TimeSignature): number {
+  if (
+    !Number.isFinite(timeSignature.numerator) ||
+    !Number.isFinite(timeSignature.denominator) ||
+    timeSignature.numerator <= 0 ||
+    timeSignature.denominator <= 0
+  ) {
+    throw new RangeError('Time signature values must be positive finite numbers');
+  }
+
+  return timeSignature.numerator * (4 / timeSignature.denominator);
+}
 
 export function groupNotesIntoMeasures(notes: Note[], beatsPerMeasure: number): Note[][] {
   if (notes.length === 0) return [];
