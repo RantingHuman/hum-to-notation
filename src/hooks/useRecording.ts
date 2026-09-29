@@ -4,6 +4,7 @@ import {
   requestMicrophoneAccess,
   AudioCaptureSession,
   MicrophonePermissionDenied,
+  getMicrophoneErrorMessage,
 } from '../services/audioCapture';
 import { PitchDetector } from '../services/pitchDetector';
 import { quantizeToNotes } from '../services/quantizer';
@@ -24,18 +25,23 @@ export function useRecording() {
   const captureRef = useRef<AudioCaptureSession | null>(null);
   const detectorRef = useRef<PitchDetector | null>(null);
   const metronomeRef = useRef<Metronome | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const recordingAttemptRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   // Keep stable ref to stopRecording to avoid stale closure in auto-stop
   const stopRef = useRef<(() => Promise<void>) | undefined>(undefined);
 
   const cleanup = useCallback(() => {
+    recordingAttemptRef.current += 1;
     if (timerRef.current) clearInterval(timerRef.current);
     detectorRef.current?.stop();
     captureRef.current?.stop();
     metronomeRef.current?.stop();
+    streamRef.current?.getTracks().forEach((track) => track.stop());
     captureRef.current = null;
     detectorRef.current = null;
     metronomeRef.current = null;
+    streamRef.current = null;
     timerRef.current = null;
   }, []);
 
@@ -94,15 +100,17 @@ export function useRecording() {
     let stream: MediaStream;
     try {
       stream = await requestMicrophoneAccess();
+      streamRef.current = stream;
     } catch (err) {
       if (err instanceof MicrophonePermissionDenied) {
         setMicDenied(true);
       } else {
-        setError('Could not access microphone. Please check your device.');
+        setError(getMicrophoneErrorMessage(err));
       }
       return;
     }
 
+    const attemptId = ++recordingAttemptRef.current;
     const beatsPerMeasure = currentProject.timeSignature.numerator;
     let countdownCount = 0;
     let actuallyRecording = false;
@@ -117,6 +125,36 @@ export function useRecording() {
     setRecordingState('countdown');
     setCountdownBeat(0);
 
+    const beginCapture = async () => {
+      try {
+        const capture = new AudioCaptureSession(stream);
+        captureRef.current = capture;
+        streamRef.current = null;
+        await capture.start();
+
+        if (recordingAttemptRef.current !== attemptId) {
+          capture.stop();
+          return;
+        }
+
+        capture.onMaxDuration = () => stopRef.current?.();
+        const detector = new PitchDetector(capture.analyserNode, capture.audioContext);
+        detectorRef.current = detector;
+        detector.start();
+
+        setRecordingState('recording');
+        setElapsedMs(0);
+        timerRef.current = setInterval(() => {
+          setElapsedMs(captureRef.current?.getElapsedMs() ?? 0);
+        }, 100);
+      } catch (err) {
+        if (recordingAttemptRef.current !== attemptId) return;
+        cleanup();
+        setRecordingState('idle');
+        setError(getMicrophoneErrorMessage(err));
+      }
+    };
+
     metronome.onBeat((beat) => {
       setCountdownBeat(beat);
 
@@ -124,27 +162,19 @@ export function useRecording() {
         countdownCount++;
         if (countdownCount >= beatsPerMeasure) {
           actuallyRecording = true;
-
-          // Start audio capture + pitch detection
-          const capture = new AudioCaptureSession(stream);
-          captureRef.current = capture;
-          capture.onMaxDuration = () => stopRef.current?.();
-
-          const detector = new PitchDetector(capture.analyserNode, capture.audioContext);
-          detectorRef.current = detector;
-          detector.start();
-
-          setRecordingState('recording');
-          setElapsedMs(0);
-          timerRef.current = setInterval(() => {
-            setElapsedMs(captureRef.current?.getElapsedMs() ?? 0);
-          }, 100);
+          void beginCapture();
         }
       }
     });
 
-    await metronome.start();
-  }, [currentProject, selectedLayerId]);
+    try {
+      await metronome.start();
+    } catch (err) {
+      cleanup();
+      setRecordingState('idle');
+      setError(getMicrophoneErrorMessage(err));
+    }
+  }, [currentProject, selectedLayerId, cleanup]);
 
   const dismissMicDenied = useCallback(() => setMicDenied(false), []);
   const dismissError = useCallback(() => setError(null), []);
