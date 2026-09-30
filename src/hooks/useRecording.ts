@@ -10,6 +10,7 @@ import { PitchDetector } from '../services/pitchDetector';
 import { quantizeToNotes } from '../services/quantizer';
 import { Metronome } from '../services/metronome';
 import { useToast } from '../context/ToastContext';
+import { explainEmptyRecording, getRecordingStats } from '../utils/recordingDiagnostics';
 
 export type RecordingState = 'idle' | 'countdown' | 'recording' | 'processing';
 
@@ -26,6 +27,8 @@ export function useRecording() {
   const detectorRef = useRef<PitchDetector | null>(null);
   const metronomeRef = useRef<Metronome | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  // The recording track, kept until processing so a silent take can name its input
+  const trackRef = useRef<MediaStreamTrack | null>(null);
   const recordingAttemptRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   // Keep stable ref to stopRecording to avoid stale closure in auto-stop
@@ -49,6 +52,9 @@ export function useRecording() {
     const detector = detectorRef.current;
     const project = currentProject;
     const layerId = selectedLayerId;
+    const track = trackRef.current;
+    const input = { label: track?.label, muted: track?.muted };
+    trackRef.current = null;
 
     cleanup();
 
@@ -66,14 +72,10 @@ export function useRecording() {
     try {
       const notes = quantizeToNotes(rawEvents, project.tempo, project.timeSignature);
       if (notes.filter((n) => !n.isRest).length === 0) {
-        showToast(
-          'No notes detected. Make sure your microphone is working and hum clearly.',
-          'warning'
-        );
-        setError(null);
-      } else {
-        setError(null);
+        showToast(`No notes detected. ${explainEmptyRecording(rawEvents, input)}`, 'warning');
+        console.info('Empty recording diagnostics:', { ...getRecordingStats(rawEvents), input });
       }
+      setError(null);
       updateLayerNotes(layerId, notes, rawEvents);
     } catch {
       showToast('Processing failed. Please try recording again.', 'error');
@@ -129,6 +131,7 @@ export function useRecording() {
       try {
         const capture = new AudioCaptureSession(stream);
         captureRef.current = capture;
+        trackRef.current = stream.getAudioTracks()[0] ?? null;
         streamRef.current = null;
         await capture.start();
 
