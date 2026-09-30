@@ -1,5 +1,6 @@
 import { memo, useEffect, useRef } from 'react';
 import { useProjectContext } from '../../context/ProjectContext';
+import { EMPTY_NOTES } from '../../utils/noteUtils';
 import { renderTabNotation } from '../../services/notationRenderer';
 
 export const TabView = memo(function TabView() {
@@ -7,7 +8,7 @@ export const TabView = memo(function TabView() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const selectedLayer = currentProject?.layers.find((l) => l.id === selectedLayerId);
-  const notes = selectedLayer?.notes ?? [];
+  const notes = selectedLayer?.notes ?? EMPTY_NOTES;
   const octaveShift = selectedLayer?.octaveShift ?? 0;
   const showNotation = Boolean(selectedLayer && notes.length > 0);
 

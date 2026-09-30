@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useProjectContext } from '../../context/ProjectContext';
-import { midiToNoteName } from '../../utils/noteUtils';
+import { EMPTY_NOTES, midiToNoteName } from '../../utils/noteUtils';
 import { quantizeToNotes } from '../../services/quantizer';
 import {
   appendNote,
@@ -26,7 +26,7 @@ export function NoteEditor() {
     updateLayerNotes,
   } = useProjectContext();
   const selectedLayer = currentProject?.layers.find((layer) => layer.id === selectedLayerId);
-  const notes = selectedLayer?.notes ?? [];
+  const notes = selectedLayer?.notes ?? EMPTY_NOTES;
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [history, setHistory] = useState(() => createNoteHistory(notes));
   const lastAppliedNotesRef = useRef<typeof notes | null>(null);
