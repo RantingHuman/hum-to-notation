@@ -1,11 +1,30 @@
 import type { Project } from '../types/project';
-import type { Note } from '../types/music';
-import { getMeasureLengthBeats, groupNotesIntoMeasures } from '../utils/measureUtils';
+import {
+  getMeasureLengthBeats,
+  groupNotesIntoMeasures,
+  splitNotesForNotation,
+  type NotationNote,
+} from '../utils/measureUtils';
 import { midiToPitch, durationToMusicXmlType } from '../utils/musicXmlUtils';
 
 const DIVISIONS = 8; // eighth note = 1 unit
 
-function noteToXml(note: Note, octaveShift: number): string {
+function tiesToXml(note: NotationNote): { tieXml: string; notationsXml: string } {
+  const types = [
+    ...(note.tieFromPrevious ? ['stop'] : []),
+    ...(note.tieToNext ? ['start'] : []),
+  ];
+  if (types.length === 0) return { tieXml: '', notationsXml: '' };
+
+  return {
+    tieXml: types.map((type) => `\n          <tie type="${type}"/>`).join(''),
+    notationsXml: `\n          <notations>${types
+      .map((type) => `<tied type="${type}"/>`)
+      .join('')}</notations>`,
+  };
+}
+
+function noteToXml(note: NotationNote, octaveShift: number): string {
   const { type, dots, divisions } = durationToMusicXmlType(note.durationBeats);
   const dotsXml = '<dot/>'.repeat(dots);
 
@@ -21,6 +40,7 @@ function noteToXml(note: Note, octaveShift: number): string {
   const effectiveMidi = Math.max(21, Math.min(108, note.midiNumber + octaveShift * 12));
   const { step, alter, octave } = midiToPitch(effectiveMidi);
   const alterXml = alter !== 0 ? `\n          <alter>${alter}</alter>` : '';
+  const { tieXml, notationsXml } = tiesToXml(note);
 
   return `
         <note>
@@ -28,8 +48,8 @@ function noteToXml(note: Note, octaveShift: number): string {
             <step>${step}</step>${alterXml}
             <octave>${octave}</octave>
           </pitch>
-          <duration>${divisions}</duration>
-          <type>${type}</type>${dotsXml}
+          <duration>${divisions}</duration>${tieXml}
+          <type>${type}</type>${dotsXml}${notationsXml}
         </note>`;
 }
 
@@ -40,9 +60,10 @@ export function exportProjectToMusicXml(project: Project): Blob {
   const partsXml = project.layers.map((layer, layerIdx) => {
     const partId = `P${layerIdx + 1}`;
     const clef = layer.instrument === 'bass' ? '<sign>F</sign><line>4</line>' : '<sign>G</sign><line>2</line>';
-    const measures = groupNotesIntoMeasures(
-      layer.notes,
-      getMeasureLengthBeats(project.timeSignature)
+    const measureLengthBeats = getMeasureLengthBeats(project.timeSignature);
+    const measures: NotationNote[][] = groupNotesIntoMeasures(
+      splitNotesForNotation(layer.notes, measureLengthBeats),
+      measureLengthBeats
     );
 
     const measuresXml = measures.map((measureNotes, mIdx) => {

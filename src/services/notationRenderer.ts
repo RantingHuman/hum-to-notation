@@ -7,10 +7,19 @@ import {
   Accidental,
   TabStave,
   TabNote,
+  StaveTie,
+  TabTie,
+  type Note as VexNote,
+  type RenderContext,
 } from 'vexflow';
 import type { Note, TimeSignature } from '../types/music';
 import type { Instrument } from '../types/music';
-import { getMeasureLengthBeats, groupNotesIntoMeasures } from '../utils/measureUtils';
+import {
+  getMeasureLengthBeats,
+  groupNotesIntoMeasures,
+  splitNotesForNotation,
+  type NotationNote,
+} from '../utils/measureUtils';
 import { midiToTab } from '../utils/tabUtils';
 
 // ── MIDI / duration helpers ───────────────────────────────────────────────────
@@ -43,7 +52,11 @@ function makeDurationString(vd: VexDuration, isRest: boolean): string {
   return vd.duration + (vd.dots ? 'd' : '') + (isRest ? 'r' : '');
 }
 
-function padMeasure(notes: Note[], beatsPerMeasure: number, measureStartBeat: number): Note[] {
+function padMeasure(
+  notes: NotationNote[],
+  beatsPerMeasure: number,
+  measureStartBeat: number
+): NotationNote[] {
   const total = notes.reduce((s, n) => s + n.durationBeats, 0);
   const remaining = beatsPerMeasure - (total % beatsPerMeasure || beatsPerMeasure);
   if (remaining > 0.01 && remaining < beatsPerMeasure - 0.01) {
@@ -58,6 +71,37 @@ function padMeasure(notes: Note[], beatsPerMeasure: number, measureStartBeat: nu
     ];
   }
   return notes;
+}
+
+interface RenderedNote {
+  vexNote: VexNote;
+  lineIdx: number;
+}
+
+/**
+ * Draw ties between consecutive pieces of split notes. A tie that crosses a
+ * line break is drawn as two open-ended halves.
+ */
+function drawTies(
+  ctx: RenderContext,
+  notes: NotationNote[],
+  rendered: Map<NotationNote, RenderedNote>,
+  TieClass: typeof StaveTie
+): void {
+  notes.forEach((note, index) => {
+    if (!note.tieToNext) return;
+    const first = rendered.get(note);
+    const last = rendered.get(notes[index + 1]);
+    if (!first || !last) return;
+
+    const ties = first.lineIdx === last.lineIdx
+      ? [{ firstNote: first.vexNote, lastNote: last.vexNote }]
+      : [{ firstNote: first.vexNote }, { lastNote: last.vexNote }];
+
+    ties.forEach((tie) => {
+      new TieClass({ ...tie, firstIndexes: [0], lastIndexes: [0] }).setContext(ctx).draw();
+    });
+  });
 }
 
 // ── Sheet music rendering ─────────────────────────────────────────────────────
@@ -80,7 +124,9 @@ export function renderSheetMusic(
   const clef = instrument === 'bass' ? 'bass' : 'treble';
   const timeSigStr = `${timeSignature.numerator}/${timeSignature.denominator}`;
 
-  const allMeasures = groupNotesIntoMeasures(notes, measureLengthBeats);
+  const notationNotes = splitNotesForNotation(notes, measureLengthBeats);
+  const allMeasures: NotationNote[][] = groupNotesIntoMeasures(notationNotes, measureLengthBeats);
+  const rendered = new Map<NotationNote, RenderedNote>();
   if (allMeasures.length === 0) return;
 
   const containerWidth = container.clientWidth || 700;
@@ -92,7 +138,7 @@ export function renderSheetMusic(
   const notesPerLine = Math.max(1, Math.floor(firstStaveWidth / avgNoteWidth));
   const measuresPerLine = Math.max(1, Math.floor(notesPerLine / measureLengthBeats));
 
-  const lines: Note[][][] = [];
+  const lines: NotationNote[][][] = [];
   for (let i = 0; i < allMeasures.length; i += measuresPerLine) {
     lines.push(allMeasures.slice(i, i + measuresPerLine));
   }
@@ -154,11 +200,12 @@ export function renderSheetMusic(
           clef,
         });
 
-        // Add accidental for sharps/flats
-        if (!note.isRest && SHARPS.has(effectiveMidi % 12)) {
+        // Add accidental for sharps/flats (a tied continuation carries it over)
+        if (!note.isRest && !note.tieFromPrevious && SHARPS.has(effectiveMidi % 12)) {
           staveNote.addModifier(new Accidental('#'), 0);
         }
 
+        rendered.set(note, { vexNote: staveNote, lineIdx });
         return staveNote;
       });
 
@@ -174,6 +221,8 @@ export function renderSheetMusic(
       voice.draw(ctx, stave);
     });
   });
+
+  drawTies(ctx, notationNotes, rendered, StaveTie);
 }
 
 // ── Tab rendering ─────────────────────────────────────────────────────────────
@@ -191,14 +240,16 @@ export function renderTabNotation(
 
   const measureLengthBeats = getMeasureLengthBeats(timeSignature);
   const numStrings = instrument === 'guitar' ? 6 : 4;
-  const allMeasures = groupNotesIntoMeasures(notes, measureLengthBeats);
+  const notationNotes = splitNotesForNotation(notes, measureLengthBeats);
+  const allMeasures: NotationNote[][] = groupNotesIntoMeasures(notationNotes, measureLengthBeats);
+  const rendered = new Map<NotationNote, RenderedNote>();
   if (allMeasures.length === 0) return;
 
   const containerWidth = container.clientWidth || 700;
   const drawWidth = containerWidth - LEFT_MARGIN * 2;
 
   const measuresPerLine = Math.max(1, Math.floor(drawWidth / 200));
-  const lines: Note[][][] = [];
+  const lines: NotationNote[][][] = [];
   for (let i = 0; i < allMeasures.length; i += measuresPerLine) {
     lines.push(allMeasures.slice(i, i + measuresPerLine));
   }
@@ -238,10 +289,12 @@ export function renderTabNotation(
 
         const effectiveMidi = Math.max(21, Math.min(108, note.midiNumber + octaveShift * 12));
         const pos = midiToTab(effectiveMidi, instrument);
-        return new TabNote({
+        const tabNote = new TabNote({
           positions: [{ str: pos.string, fret: pos.fret }],
           duration: durStr,
         });
+        rendered.set(note, { vexNote: tabNote, lineIdx });
+        return tabNote;
       });
 
       if (tabNotes.length === 0) return;
@@ -256,4 +309,6 @@ export function renderTabNotation(
       voice.draw(ctx, stave);
     });
   });
+
+  drawTies(ctx, notationNotes, rendered, TabTie);
 }

@@ -74,7 +74,7 @@ export function useRecording() {
       } else {
         setError(null);
       }
-      updateLayerNotes(layerId, notes);
+      updateLayerNotes(layerId, notes, rawEvents);
     } catch {
       showToast('Processing failed. Please try recording again.', 'error');
     }

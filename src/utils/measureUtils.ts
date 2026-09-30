@@ -43,3 +43,54 @@ export function groupNotesIntoMeasures(notes: Note[], beatsPerMeasure: number): 
     }];
   });
 }
+
+export interface NotationNote extends Note {
+  tieToNext?: boolean;
+  tieFromPrevious?: boolean;
+}
+
+// Longest first; every piece of a split note uses one of these
+const NOTATABLE_DURATIONS = [4, 3, 2, 1.5, 1, 0.5];
+const BEAT_EPSILON = 0.001;
+
+/**
+ * Split notes at barlines and into durations that can be written as a single
+ * notehead (e.g. 2.5 beats → half + eighth). Pieces of a sounding note are
+ * marked as tied; rests are split without ties.
+ */
+export function splitNotesForNotation(notes: Note[], measureLengthBeats: number): NotationNote[] {
+  if (!Number.isFinite(measureLengthBeats) || measureLengthBeats <= 0) {
+    throw new RangeError('measureLengthBeats must be a positive finite number');
+  }
+
+  const sortedNotes = [...notes].sort((left, right) => left.startBeat - right.startBeat);
+  const result: NotationNote[] = [];
+
+  for (const note of sortedNotes) {
+    const pieces: NotationNote[] = [];
+    const endBeat = note.startBeat + note.durationBeats;
+    let cursorBeat = note.startBeat;
+
+    while (endBeat - cursorBeat > BEAT_EPSILON) {
+      const measureIndex = Math.floor((cursorBeat + BEAT_EPSILON) / measureLengthBeats);
+      const measureEndBeat = (measureIndex + 1) * measureLengthBeats;
+      const available = Math.min(endBeat, measureEndBeat) - cursorBeat;
+      const durationBeats =
+        NOTATABLE_DURATIONS.find((duration) => duration <= available + BEAT_EPSILON) ?? available;
+
+      pieces.push({ ...note, startBeat: cursorBeat, durationBeats });
+      cursorBeat += durationBeats;
+    }
+
+    if (!note.isRest && pieces.length > 1) {
+      pieces.forEach((piece, index) => {
+        if (index > 0) piece.tieFromPrevious = true;
+        if (index < pieces.length - 1) piece.tieToNext = true;
+      });
+    }
+
+    result.push(...pieces);
+  }
+
+  return result;
+}

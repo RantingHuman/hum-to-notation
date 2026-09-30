@@ -1,12 +1,21 @@
 import type { Note, RawPitchEvent, TimeSignature } from '../types/music';
 import { frequencyToMidi } from '../utils/noteUtils';
-import { MIN_NOTE_DURATION_MS, SILENCE_GAP_MS } from '../constants/music';
+import {
+  CLARITY_THRESHOLD,
+  MAX_PITCH_HZ,
+  MIN_NOTE_DURATION_MS,
+  MIN_PITCH_HZ,
+  ONSET_DIP_RATIO,
+  ONSET_RISE_RATIO,
+  PITCH_CHANGE_CENTS,
+  PITCH_CHANGE_CONFIRM_MS,
+  SILENCE_GAP_MS,
+} from '../constants/music';
 import { getMeasureLengthBeats } from '../utils/measureUtils';
 
 // ── Internal types ─────────────────────────────────────────────────────────────
 
 interface Segment {
-  midiNumber: number;
   startMs: number;
   endMs: number;
   frequencies: number[];
@@ -31,8 +40,10 @@ function snapToGrid(beat: number, gridSize: number): number {
 /**
  * Snap a raw duration (in beats) to the nearest "nice" duration.
  * Options: 8th, quarter, dotted quarter, half, dotted half, whole.
+ * Anything longer than a whole note snaps to the grid and is tied when rendered.
  */
 function snapDuration(raw: number): number {
+  if (raw > 4) return snapToGrid(raw, QUANTIZATION_GRID);
   const options = [0.5, 1, 1.5, 2, 3, 4];
   return options.reduce((best, opt) =>
     Math.abs(opt - raw) < Math.abs(best - raw) ? opt : best
@@ -54,6 +65,108 @@ function estimateFrameDurationMs(events: RawPitchEvent[]): number {
 
   if (deltas.length === 0) return 16;
   return Math.min(50, Math.max(10, median(deltas)));
+}
+
+function isVoiced(event: RawPitchEvent): boolean {
+  return (
+    event.clarity >= CLARITY_THRESHOLD &&
+    event.frequency >= MIN_PITCH_HZ &&
+    event.frequency <= MAX_PITCH_HZ
+  );
+}
+
+function centsBetween(frequency: number, reference: number): number {
+  return 1200 * Math.log2(frequency / reference);
+}
+
+function startSegment(event: RawPitchEvent): Segment {
+  return { startMs: event.timestamp, endMs: event.timestamp, frequencies: [event.frequency] };
+}
+
+function extendSegment(segment: Segment, event: RawPitchEvent): void {
+  segment.endMs = event.timestamp;
+  segment.frequencies.push(event.frequency);
+}
+
+/**
+ * Split detector frames into one segment per sung note.
+ *
+ * - A pitch more than PITCH_CHANGE_CENTS from the current note starts a new
+ *   note only once it has held for PITCH_CHANGE_CONFIRM_MS, so single noisy
+ *   frames are ignored but half-step moves are kept.
+ * - On the same pitch, a loudness dip followed by a rise (e.g. "da-da-da")
+ *   starts a new note. Unclear frames still count toward the dip.
+ * - A silence longer than SILENCE_GAP_MS always ends the note.
+ */
+function segmentEvents(events: RawPitchEvent[], frameDurationMs: number): Segment[] {
+  const segments: Segment[] = [];
+  let current: Segment | null = null;
+  // Frames at a different pitch that have not yet held long enough to count
+  let pending: Segment | null = null;
+  // Loudness envelope of the current note, for spotting same-pitch re-attacks
+  let peakRms = 0;
+  let troughRms = 0;
+
+  for (const event of events) {
+    const { rms } = event;
+
+    if (!isVoiced(event)) {
+      if (current && rms !== undefined) troughRms = Math.min(troughRms, rms);
+      continue;
+    }
+
+    let next: Segment | null = null;
+
+    if (!current || event.timestamp - (pending ?? current).endMs > SILENCE_GAP_MS) {
+      next = startSegment(event);
+    } else if (
+      Math.abs(centsBetween(event.frequency, median(current.frequencies))) <= PITCH_CHANGE_CENTS
+    ) {
+      // Back on the current pitch: any pending frames were a glitch
+      pending = null;
+      const isReattack =
+        rms !== undefined &&
+        event.timestamp - current.startMs >= MIN_NOTE_DURATION_MS &&
+        peakRms > 0 &&
+        troughRms <= peakRms * ONSET_DIP_RATIO &&
+        rms >= troughRms * ONSET_RISE_RATIO;
+
+      if (isReattack) {
+        next = startSegment(event);
+      } else {
+        extendSegment(current, event);
+        if (rms !== undefined && rms > peakRms) {
+          peakRms = rms;
+          troughRms = rms;
+        } else if (rms !== undefined) {
+          troughRms = Math.min(troughRms, rms);
+        }
+      }
+    } else {
+      if (
+        pending &&
+        Math.abs(centsBetween(event.frequency, median(pending.frequencies))) <= PITCH_CHANGE_CENTS
+      ) {
+        extendSegment(pending, event);
+      } else {
+        pending = startSegment(event);
+      }
+      if (pending.endMs - pending.startMs + frameDurationMs >= PITCH_CHANGE_CONFIRM_MS) {
+        next = pending;
+      }
+    }
+
+    if (next) {
+      if (current) segments.push(current);
+      current = next;
+      pending = null;
+      peakRms = rms ?? 0;
+      troughRms = peakRms;
+    }
+  }
+
+  if (current) segments.push(current);
+  return segments;
 }
 
 function chooseRestDuration(maxAvailable: number): number {
@@ -93,15 +206,16 @@ function appendRestRange(
  * Convert raw pitch detection events into a quantized Note[] array.
  *
  * Pipeline:
- * 1. Group consecutive frames with similar pitch (±1 semitone) into segments.
+ * 1. Split frames into notes on pitch changes, re-attacks, and silences.
  * 2. Account for the final detector frame and discard very short blips.
  * 3. Convert segment timestamps to beats using tempo.
  * 4. Snap onsets and durations to an 8th-note grid, bounded by the next onset.
+ *    Notes may cross barlines; the renderer and exporters tie them.
  * 5. Insert rest notes to preserve the quantized timeline.
  *
- * @param rawEvents  - Pitch events from PitchDetector, in timestamp order.
+ * @param rawEvents  - Frames from PitchDetector; unclear frames are filtered here.
  * @param tempo      - Project BPM, used for ms → beats conversion.
- * @param timeSignature - Used to cap note duration at measure boundaries.
+ * @param timeSignature - Used to split rests at measure boundaries.
  */
 
 export function quantizeToNotes(
@@ -117,45 +231,9 @@ export function quantizeToNotes(
   const events = [...rawEvents].sort((a, b) => a.timestamp - b.timestamp);
   const frameDurationMs = estimateFrameDurationMs(events);
 
-  // ── Step 1: group consecutive frames into pitch segments ──────────────────
+  // ── Step 1: split frames into one segment per sung note ─────────────────
 
-  const segments: Segment[] = [];
-  let current: Segment | null = null;
-
-  for (const event of events) {
-    const midi = frequencyToMidi(event.frequency);
-
-    if (!current) {
-      current = {
-        midiNumber: midi,
-        startMs: event.timestamp,
-        endMs: event.timestamp,
-        frequencies: [event.frequency],
-      };
-      continue;
-    }
-
-    const gap = event.timestamp - current.endMs;
-    const midiDiff = Math.abs(midi - current.midiNumber);
-
-    if (gap <= SILENCE_GAP_MS && midiDiff <= 1) {
-      // Same note — extend segment
-      current.endMs = event.timestamp;
-      current.frequencies.push(event.frequency);
-      // Keep median MIDI number as we accumulate more samples
-      current.midiNumber = frequencyToMidi(median(current.frequencies));
-    } else {
-      // Different note or silence gap — close current, start new
-      segments.push(current);
-      current = {
-        midiNumber: midi,
-        startMs: event.timestamp,
-        endMs: event.timestamp,
-        frequencies: [event.frequency],
-      };
-    }
-  }
-  if (current) segments.push(current);
+  const segments = segmentEvents(events, frameDurationMs);
 
   // ── Step 2: discard blips shorter than MIN_NOTE_DURATION_MS ──────────────
 
@@ -181,13 +259,7 @@ export function quantizeToNotes(
       startBeat + QUANTIZATION_GRID,
       snapToGrid(effectiveEndMs / msPerBeat, QUANTIZATION_GRID)
     );
-    let durationBeats = snapDuration(endBeat - startBeat);
-
-    // Cap duration so note doesn't overflow its measure
-    const beatInMeasure = startBeat % measureLengthBeats;
-    const remaining = measureLengthBeats - beatInMeasure;
-    durationBeats = Math.min(durationBeats, remaining);
-    if (durationBeats < QUANTIZATION_GRID) continue;
+    const durationBeats = snapDuration(endBeat - startBeat);
 
     const previous = candidates[candidates.length - 1];
     if (previous && startBeat <= previous.startBeat) {
@@ -201,11 +273,12 @@ export function quantizeToNotes(
       );
     }
 
+    const detectedFrequency = median(seg.frequencies);
     candidates.push({
-      midiNumber: seg.midiNumber,
+      midiNumber: frequencyToMidi(detectedFrequency),
       startBeat,
       durationBeats,
-      detectedFrequency: median(seg.frequencies),
+      detectedFrequency,
     });
   }
 

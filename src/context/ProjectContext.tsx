@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import type { Project, ProjectSummary, Layer } from '../types/project';
-import type { Instrument, MetronomeMode, Note, TimeSignature } from '../types/music';
+import type { Instrument, MetronomeMode, Note, RawPitchEvent, TimeSignature } from '../types/music';
 import * as storage from '../services/storage';
 import { StorageQuotaError } from '../services/storage';
 import { useToast } from './ToastContext';
@@ -18,7 +18,8 @@ interface ProjectContextValue {
   addLayer: (instrument: Instrument) => void;
   selectLayer: (layerId: string) => void;
   deleteLayer: (layerId: string) => void;
-  updateLayerNotes: (layerId: string, notes: Note[]) => void;
+  /** Pass rawPitchEvents after a recording; omit it to keep the layer's existing frames. */
+  updateLayerNotes: (layerId: string, notes: Note[], rawPitchEvents?: RawPitchEvent[]) => void;
   clearLayerNotes: (layerId: string) => void;
   shiftOctave: (layerId: string, direction: 1 | -1) => void;
   setMetronomeMode: (mode: MetronomeMode) => void;
@@ -127,22 +128,31 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     setSelectedLayerId((prev) => (prev === layerId ? null : prev));
   }, []);
 
-  const updateLayerNotes = useCallback((layerId: string, notes: Note[]) => {
-    setCurrentProject((prev) => {
-      if (!prev) return null;
-      return {
-        ...prev,
-        layers: prev.layers.map((l) => (l.id === layerId ? { ...l, notes } : l)),
-      };
-    });
-  }, []);
+  const updateLayerNotes = useCallback(
+    (layerId: string, notes: Note[], rawPitchEvents?: RawPitchEvent[]) => {
+      setCurrentProject((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          layers: prev.layers.map((l) =>
+            l.id === layerId
+              ? { ...l, notes, ...(rawPitchEvents ? { rawPitchEvents } : {}) }
+              : l
+          ),
+        };
+      });
+    },
+    []
+  );
 
   const clearLayerNotes = useCallback((layerId: string) => {
     setCurrentProject((prev) => {
       if (!prev) return null;
       return {
         ...prev,
-        layers: prev.layers.map((l) => (l.id === layerId ? { ...l, notes: [] } : l)),
+        layers: prev.layers.map((l) =>
+          l.id === layerId ? { ...l, notes: [], rawPitchEvents: undefined } : l
+        ),
       };
     });
   }, []);

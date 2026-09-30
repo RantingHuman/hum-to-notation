@@ -27,6 +27,16 @@ export const GUITAR_OPEN_STRINGS = [64, 59, 55, 50, 45, 40];
 export const BASS_OPEN_STRINGS = [43, 38, 33, 28];
 
 export const CLARITY_THRESHOLD = 0.85;
+// Humming/singing range accepted as pitched (Hz)
+export const MIN_PITCH_HZ = 80;
+export const MAX_PITCH_HZ = 1100;
+// A frame this far from the current note's centre is a candidate new pitch
+export const PITCH_CHANGE_CENTS = 70;
+// ...and the new pitch must hold this long before it starts a new note
+export const PITCH_CHANGE_CONFIRM_MS = 40;
+// A same-pitch re-attack: loudness dips below DIP × peak, then rises RISE × the dip
+export const ONSET_DIP_RATIO = 0.5;
+export const ONSET_RISE_RATIO = 2;
 export const MIN_NOTE_DURATION_MS = 80;
 export const SILENCE_GAP_MS = 100;
 export const MAX_RECORDING_DURATION_MS = 120_000; // 2 minutes

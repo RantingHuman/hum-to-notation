@@ -1,6 +1,5 @@
 import { PitchDetector as PitchyDetector } from 'pitchy';
 import type { RawPitchEvent } from '../types/music';
-import { CLARITY_THRESHOLD } from '../constants/music';
 
 export class PitchDetector {
   private analyser: AnalyserNode;
@@ -36,14 +35,17 @@ export class PitchDetector {
       this.audioContext.sampleRate
     );
 
-    // Accept only clear pitches in a singing/humming range (80 Hz – 1100 Hz)
-    if (clarity >= CLARITY_THRESHOLD && pitch >= 80 && pitch <= 1100) {
-      this.events.push({
-        frequency: pitch,
-        clarity,
-        timestamp: Date.now() - this.startTime,
-      });
-    }
+    let sumSquares = 0;
+    for (const sample of this.buffer) sumSquares += sample * sample;
+
+    // Keep every frame: the quantizer filters by clarity and range, and uses
+    // the loudness of unclear frames to find re-attacks on the same pitch.
+    this.events.push({
+      frequency: Number.isFinite(pitch) ? pitch : 0,
+      clarity: Number.isFinite(clarity) ? clarity : 0,
+      timestamp: Date.now() - this.startTime,
+      rms: Math.sqrt(sumSquares / this.buffer.length),
+    });
 
     this.animFrameId = requestAnimationFrame(() => this.loop());
   }

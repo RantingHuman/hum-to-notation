@@ -11,6 +11,24 @@ function event(midiNumber: number, timestamp: number): RawPitchEvent {
   };
 }
 
+const FRAME_MS = 16;
+const FOUR_FOUR = { numerator: 4, denominator: 4 };
+
+/** Continuous frames at one pitch from startMs up to (not including) endMs. */
+function held(midiNumber: number, startMs: number, endMs: number, rms?: number): RawPitchEvent[] {
+  const frames: RawPitchEvent[] = [];
+  for (let timestamp = startMs; timestamp < endMs; timestamp += FRAME_MS) {
+    frames.push({ ...event(midiNumber, timestamp), ...(rms === undefined ? {} : { rms }) });
+  }
+  return frames;
+}
+
+function sounding(events: RawPitchEvent[], tempo = 120) {
+  return quantizeToNotes(events, tempo, FOUR_FOUR)
+    .filter((note) => !note.isRest)
+    .map(({ midiNumber, startBeat, durationBeats }) => ({ midiNumber, startBeat, durationBeats }));
+}
+
 describe('quantizeToNotes', () => {
   it('keeps a note whose detected frames cover about 100 ms', () => {
     const notes = quantizeToNotes(
@@ -78,5 +96,75 @@ describe('quantizeToNotes', () => {
     expect(notes.find((note) => !note.isRest)).toEqual(
       expect.objectContaining({ midiNumber: 60, startBeat: 3 })
     );
+  });
+
+  it('splits a legato half-step move into two notes', () => {
+    expect(sounding([...held(64, 0, 500), ...held(65, 500, 1000)])).toEqual([
+      { midiNumber: 64, startBeat: 0, durationBeats: 1 },
+      { midiNumber: 65, startBeat: 1, durationBeats: 1 },
+    ]);
+  });
+
+  it('keeps every note of a chromatic run', () => {
+    const run = [60, 61, 62, 63].flatMap((midi, index) => held(midi, index * 500, index * 500 + 500));
+    expect(sounding(run).map((note) => note.midiNumber)).toEqual([60, 61, 62, 63]);
+  });
+
+  it('ignores a single off-pitch frame inside a held note', () => {
+    const frames = held(60, 0, 1000);
+    frames[20] = event(62, frames[20].timestamp);
+    expect(sounding(frames)).toEqual([{ midiNumber: 60, startBeat: 0, durationBeats: 2 }]);
+  });
+
+  it('does not split a note on vibrato narrower than a semitone', () => {
+    const frames = held(69, 0, 1000).map((frame, index) => ({
+      ...frame,
+      frequency: frame.frequency * Math.pow(2, (40 * Math.sin(index / 2)) / 1200),
+    }));
+    expect(sounding(frames)).toEqual([{ midiNumber: 69, startBeat: 0, durationBeats: 2 }]);
+  });
+
+  it('splits repeated notes on the same pitch at a loudness dip', () => {
+    const frames = [
+      ...held(60, 0, 450, 0.2),
+      // consonant: quieter and unclear, but shorter than the silence gap
+      { frequency: 0, clarity: 0.3, timestamp: 450, rms: 0.03 },
+      { frequency: 0, clarity: 0.3, timestamp: 466, rms: 0.03 },
+      ...held(60, 482, 1000, 0.2),
+    ];
+    expect(sounding(frames)).toEqual([
+      { midiNumber: 60, startBeat: 0, durationBeats: 1 },
+      { midiNumber: 60, startBeat: 1, durationBeats: 1 },
+    ]);
+  });
+
+  it('keeps a steady note whole when loudness only wavers slightly', () => {
+    const frames = held(60, 0, 1000).map((frame, index) => ({
+      ...frame,
+      rms: 0.2 + 0.05 * Math.sin(index),
+    }));
+    expect(sounding(frames)).toEqual([{ midiNumber: 60, startBeat: 0, durationBeats: 2 }]);
+  });
+
+  it('ignores unclear and out-of-range frames', () => {
+    const frames = [
+      ...held(60, 0, 500),
+      { frequency: 3000, clarity: 0.99, timestamp: 510 },
+      { frequency: 440, clarity: 0.2, timestamp: 526 },
+    ];
+    expect(sounding(frames)).toEqual([{ midiNumber: 60, startBeat: 0, durationBeats: 1 }]);
+  });
+
+  it('keeps the full length of a note held across a barline', () => {
+    // Starts on beat 3 (1500 ms at 120 bpm) and holds for 3 beats
+    expect(sounding(held(60, 1500, 3000))).toEqual([
+      { midiNumber: 60, startBeat: 3, durationBeats: 3 },
+    ]);
+  });
+
+  it('keeps notes longer than a whole note', () => {
+    expect(sounding(held(60, 0, 3000))).toEqual([
+      { midiNumber: 60, startBeat: 0, durationBeats: 6 },
+    ]);
   });
 });

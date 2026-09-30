@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useProjectContext } from '../../context/ProjectContext';
 import { midiToNoteName } from '../../utils/noteUtils';
+import { quantizeToNotes } from '../../services/quantizer';
 import {
   appendNote,
   deleteNoteAt,
@@ -72,6 +73,20 @@ export function NoteEditor() {
     setSelectedIndex(Math.min(index, Math.max(0, nextNotes.length - 1)));
   };
 
+  const rawPitchEvents = selectedLayer.rawPitchEvents;
+  const canRetranscribe = Boolean(rawPitchEvents && rawPitchEvents.length > 0);
+
+  const handleRetranscribe = () => {
+    if (!rawPitchEvents || !currentProject) return;
+    const nextNotes = quantizeToNotes(
+      rawPitchEvents,
+      currentProject.tempo,
+      currentProject.timeSignature
+    );
+    applyNotes(nextNotes);
+    setSelectedIndex(0);
+  };
+
   const handleAddNote = () => {
     const nextNotes = appendNote(notes);
     applyNotes(nextNotes);
@@ -107,6 +122,18 @@ export function NoteEditor() {
             title="Redo note edit"
           >
             Redo
+          </button>
+          <button
+            onClick={handleRetranscribe}
+            disabled={!canRetranscribe}
+            className="bg-gray-700 hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs px-2 py-1.5 rounded min-h-8"
+            title={
+              canRetranscribe
+                ? 'Rebuild notes from the last recording using the current tempo and time signature (undoable)'
+                : 'Record this layer to enable re-transcribing'
+            }
+          >
+            Re-transcribe
           </button>
           <button
             onClick={handleAddNote}

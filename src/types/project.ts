@@ -1,10 +1,12 @@
-import type { Instrument, MetronomeMode, Note, TimeSignature } from './music';
+import type { Instrument, MetronomeMode, Note, RawPitchEvent, TimeSignature } from './music';
 
 export interface Layer {
   id: string;
   instrument: Instrument;
   octaveShift: number;
   notes: Note[];
+  /** Detector frames from the last recording, kept so the layer can be re-transcribed. */
+  rawPitchEvents?: RawPitchEvent[];
 }
 
 export interface Project {

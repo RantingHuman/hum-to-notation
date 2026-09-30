@@ -24,13 +24,3 @@ export function midiToMidiWriterName(midi: number): string {
   const octave = Math.floor(midi / 12) - 1;
   return `${NOTE_NAMES[midi % 12]}${octave}`;
 }
-
-export function beatsToMidiWriterDuration(beats: number): string {
-  if (beats >= 4)    return '1';
-  if (beats >= 3)    return 'd2';
-  if (beats >= 2)    return '2';
-  if (beats >= 1.5)  return 'd4';
-  if (beats >= 1)    return '4';
-  if (beats >= 0.75) return 'd8';
-  return '8';
-}

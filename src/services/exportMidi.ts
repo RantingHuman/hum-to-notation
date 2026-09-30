@@ -2,7 +2,14 @@
 // @ts-ignore — midi-writer-js ships types at a non-standard path
 import MidiWriter from 'midi-writer-js';
 import type { Project } from '../types/project';
-import { midiToMidiWriterName, beatsToMidiWriterDuration } from '../utils/musicXmlUtils';
+import { midiToMidiWriterName } from '../utils/musicXmlUtils';
+
+// midi-writer-js default resolution (ticks per quarter note)
+const TICKS_PER_BEAT = 128;
+
+function beatsToTicks(beats: number): string {
+  return `T${Math.round(beats * TICKS_PER_BEAT)}`;
+}
 
 // General MIDI program numbers (0-indexed)
 const GM_PROGRAM: Record<string, number> = {
@@ -30,34 +37,28 @@ export function exportProjectToMidi(project: Project): Blob {
     // Instrument program change
     track.addEvent(new MidiWriter.ProgramChangeEvent({ instrument: GM_PROGRAM[layer.instrument] }));
 
-    // Notes — we schedule each non-rest note; rests become wait time on the next note
-    // We iterate notes in order and track current beat position.
+    // Rests are implied: each note waits for the gap since the last sounding note ended.
+    // Tick durations keep lengths like 2.5 beats (tied in notation) exact.
     let curBeat = 0;
 
-    layer.notes.forEach((note) => {
-      const effectiveMidi = Math.max(21, Math.min(108, note.midiNumber + layer.octaveShift * 12));
-      const duration = beatsToMidiWriterDuration(note.durationBeats);
+    layer.notes
+      .filter((note) => !note.isRest)
+      .sort((left, right) => left.startBeat - right.startBeat)
+      .forEach((note) => {
+        const effectiveMidi = Math.max(21, Math.min(108, note.midiNumber + layer.octaveShift * 12));
+        const gap = Math.max(0, note.startBeat - curBeat);
 
-      // Gap between current position and note start (rest)
-      const gap = note.startBeat - curBeat;
-      const waitDuration = gap > 0.25 ? beatsToMidiWriterDuration(gap) : '0';
+        track.addEvent(
+          new MidiWriter.NoteEvent({
+            pitch: [midiToMidiWriterName(effectiveMidi)],
+            duration: beatsToTicks(note.durationBeats),
+            wait: gap > 0 ? beatsToTicks(gap) : '0',
+            velocity: 70,
+          })
+        );
 
-      if (note.isRest) {
         curBeat = note.startBeat + note.durationBeats;
-        return;
-      }
-
-      track.addEvent(
-        new MidiWriter.NoteEvent({
-          pitch: [midiToMidiWriterName(effectiveMidi)],
-          duration,
-          wait: waitDuration,
-          velocity: 70,
-        })
-      );
-
-      curBeat = note.startBeat + note.durationBeats;
-    });
+      });
 
     tracks.push(track);
   });
