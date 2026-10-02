@@ -1,8 +1,10 @@
 import * as Tone from 'tone';
 import type { TimeSignature } from '../types/music';
+import { audioTimeToPerformanceMs } from '../utils/recordingTiming';
 
 export type MetronomeMode = 'audio' | 'visual';
-export type BeatCallback = (beatNumber: number, isDownbeat: boolean) => void;
+/** heardAtMs: when the click reaches the listener, on the performance.now() clock. */
+export type BeatCallback = (beatNumber: number, isDownbeat: boolean, heardAtMs: number) => void;
 
 export class Metronome {
   private bpm: number;
@@ -70,8 +72,18 @@ export class Metronome {
           this.synth.triggerAttackRelease(freq, '32n', time);
         }
 
+        // Sequence callbacks run ahead of time; convert the scheduled audio time
+        // now so listeners know exactly when this click is heard.
+        const rawContext = Tone.getContext().rawContext as AudioContext;
+        const heardAtMs = audioTimeToPerformanceMs(
+          time,
+          rawContext.currentTime,
+          performance.now(),
+          rawContext.outputLatency || rawContext.baseLatency || 0
+        );
+
         Tone.getDraw().schedule(() => {
-          this.beatCallback?.(beatNumber, isDownbeat);
+          this.beatCallback?.(beatNumber, isDownbeat, heardAtMs);
         }, time);
       },
       beatIndices,

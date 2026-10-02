@@ -89,7 +89,6 @@ export class AudioCaptureSession {
   readonly analyserNode: AnalyserNode;
   private source: MediaStreamAudioSourceNode;
   private stream: MediaStream;
-  private startTime: number;
   private maxTimer: ReturnType<typeof setTimeout> | null = null;
   private stopped = false;
 
@@ -103,7 +102,6 @@ export class AudioCaptureSession {
     this.analyserNode = this.audioContext.createAnalyser();
     this.analyserNode.fftSize = 2048;
     this.source.connect(this.analyserNode);
-    this.startTime = Date.now();
     this.maxTimer = setTimeout(
       () => this.onMaxDuration?.(),
       MAX_RECORDING_DURATION_MS
@@ -122,10 +120,6 @@ export class AudioCaptureSession {
     if (this.audioContext.state !== 'running') {
       throw new AudioContextStartFailed();
     }
-  }
-
-  getElapsedMs(): number {
-    return Date.now() - this.startTime;
   }
 
   stop(): void {

@@ -8,20 +8,26 @@ export class PitchDetector {
   private buffer: Float32Array<ArrayBuffer>;
   private events: RawPitchEvent[] = [];
   private animFrameId: number | null = null;
-  private startTime = 0;
   private running = false;
+  // How long before "now" the analysed sound actually happened
+  private readonly frameDelayMs: number;
 
-  constructor(analyser: AnalyserNode, audioContext: AudioContext) {
+  /**
+   * Frames are timestamped on the performance.now() clock, at the moment the
+   * sound reached the microphone: the centre of the analysis window, less the
+   * input latency the browser reports for the track.
+   */
+  constructor(analyser: AnalyserNode, audioContext: AudioContext, inputLatencyMs = 0) {
     this.analyser = analyser;
     this.audioContext = audioContext;
     const size = analyser.fftSize;
     this.detector = PitchyDetector.forFloat32Array(size);
     this.buffer = new Float32Array(size) as Float32Array<ArrayBuffer>;
+    this.frameDelayMs = (size / 2 / audioContext.sampleRate) * 1000 + inputLatencyMs;
   }
 
   start(): void {
     this.events = [];
-    this.startTime = Date.now();
     this.running = true;
     this.loop();
   }
@@ -43,7 +49,7 @@ export class PitchDetector {
     this.events.push({
       frequency: Number.isFinite(pitch) ? pitch : 0,
       clarity: Number.isFinite(clarity) ? clarity : 0,
-      timestamp: Date.now() - this.startTime,
+      timestamp: performance.now() - this.frameDelayMs,
       rms: Math.sqrt(sumSquares / this.buffer.length),
     });
 

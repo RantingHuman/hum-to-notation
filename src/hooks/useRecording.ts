@@ -11,6 +11,7 @@ import { quantizeToNotes } from '../services/quantizer';
 import { Metronome } from '../services/metronome';
 import { useToast } from '../context/ToastContext';
 import { explainEmptyRecording, getRecordingStats } from '../utils/recordingDiagnostics';
+import { alignFramesToDownbeat } from '../utils/recordingTiming';
 
 export type RecordingState = 'idle' | 'countdown' | 'recording' | 'processing';
 
@@ -29,6 +30,8 @@ export function useRecording() {
   const streamRef = useRef<MediaStream | null>(null);
   // The recording track, kept until processing so a silent take can name its input
   const trackRef = useRef<MediaStreamTrack | null>(null);
+  // When the first downbeat after the count-in is heard (performance.now() ms)
+  const downbeatRef = useRef<number | null>(null);
   const recordingAttemptRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   // Keep stable ref to stopRecording to avoid stale closure in auto-stop
@@ -46,6 +49,7 @@ export function useRecording() {
     metronomeRef.current = null;
     streamRef.current = null;
     timerRef.current = null;
+    downbeatRef.current = null;
   }, []);
 
   const stopRecording = useCallback(async () => {
@@ -54,16 +58,18 @@ export function useRecording() {
     const layerId = selectedLayerId;
     const track = trackRef.current;
     const input = { label: track?.label, muted: track?.muted };
+    const downbeatMs = downbeatRef.current;
     trackRef.current = null;
 
     cleanup();
 
-    if (!detector || !project || !layerId) {
+    // Stopped during the count-in: nothing was recorded
+    if (!detector || !project || !layerId || downbeatMs === null) {
       setRecordingState('idle');
       return;
     }
 
-    const rawEvents = detector.getRawPitchEvents();
+    const rawEvents = alignFramesToDownbeat(detector.getRawPitchEvents(), downbeatMs);
     setRecordingState('processing');
 
     // Yield to the browser for one frame so the "Processing…" UI renders
@@ -114,8 +120,42 @@ export function useRecording() {
 
     const attemptId = ++recordingAttemptRef.current;
     const beatsPerMeasure = currentProject.timeSignature.numerator;
-    let countdownCount = 0;
-    let actuallyRecording = false;
+    let beatsHeard = 0;
+
+    setRecordingState('countdown');
+    setCountdownBeat(0);
+
+    // Start listening before the count-in, so audio start-up delay can't clip the
+    // first note. Frames are re-based to the downbeat when recording stops.
+    try {
+      const capture = new AudioCaptureSession(stream);
+      captureRef.current = capture;
+      streamRef.current = null;
+      await capture.start();
+
+      if (recordingAttemptRef.current !== attemptId) {
+        capture.stop();
+        return;
+      }
+
+      const track = stream.getAudioTracks()[0] ?? null;
+      trackRef.current = track;
+      const inputLatencySec = (track?.getSettings() as { latency?: number } | undefined)?.latency;
+      capture.onMaxDuration = () => stopRef.current?.();
+      const detector = new PitchDetector(
+        capture.analyserNode,
+        capture.audioContext,
+        typeof inputLatencySec === 'number' ? inputLatencySec * 1000 : 0
+      );
+      detectorRef.current = detector;
+      detector.start();
+    } catch (err) {
+      if (recordingAttemptRef.current !== attemptId) return;
+      cleanup();
+      setRecordingState('idle');
+      setError(getMicrophoneErrorMessage(err));
+      return;
+    }
 
     const metronome = new Metronome(
       currentProject.tempo,
@@ -124,49 +164,18 @@ export function useRecording() {
     );
     metronomeRef.current = metronome;
 
-    setRecordingState('countdown');
-    setCountdownBeat(0);
+    metronome.onBeat((beat, _isDownbeat, heardAtMs) => {
+      setCountdownBeat(beat);
+      beatsHeard++;
 
-    const beginCapture = async () => {
-      try {
-        const capture = new AudioCaptureSession(stream);
-        captureRef.current = capture;
-        trackRef.current = stream.getAudioTracks()[0] ?? null;
-        streamRef.current = null;
-        await capture.start();
-
-        if (recordingAttemptRef.current !== attemptId) {
-          capture.stop();
-          return;
-        }
-
-        capture.onMaxDuration = () => stopRef.current?.();
-        const detector = new PitchDetector(capture.analyserNode, capture.audioContext);
-        detectorRef.current = detector;
-        detector.start();
-
+      // One full bar of count-in, then the next downbeat is beat 0 of the take
+      if (beatsHeard === beatsPerMeasure + 1) {
+        downbeatRef.current = heardAtMs;
         setRecordingState('recording');
         setElapsedMs(0);
         timerRef.current = setInterval(() => {
-          setElapsedMs(captureRef.current?.getElapsedMs() ?? 0);
+          setElapsedMs(Math.max(0, performance.now() - heardAtMs));
         }, 100);
-      } catch (err) {
-        if (recordingAttemptRef.current !== attemptId) return;
-        cleanup();
-        setRecordingState('idle');
-        setError(getMicrophoneErrorMessage(err));
-      }
-    };
-
-    metronome.onBeat((beat) => {
-      setCountdownBeat(beat);
-
-      if (!actuallyRecording) {
-        countdownCount++;
-        if (countdownCount >= beatsPerMeasure) {
-          actuallyRecording = true;
-          void beginCapture();
-        }
       }
     });
 
