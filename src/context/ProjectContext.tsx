@@ -16,6 +16,7 @@ interface ProjectContextValue {
   deleteProject: (id: string) => Promise<void>;
   updateCurrentProject: (partial: Partial<Project>) => void;
   addLayer: (instrument: Instrument) => void;
+  setLayerInstrument: (layerId: string, instrument: Instrument) => void;
   selectLayer: (layerId: string) => void;
   deleteLayer: (layerId: string) => void;
   /** Pass rawPitchEvents after a recording; omit it to keep the layer's existing frames. */
@@ -70,7 +71,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const createProject = useCallback(async (name: string): Promise<Project> => {
     const project = await storage.createProject(name);
     setCurrentProject(project);
-    setSelectedLayerId(null);
+    setSelectedLayerId(project.layers[0]?.id ?? null);
     setProjectList((prev) => [
       { id: project.id, name: project.name, updatedAt: project.updatedAt },
       ...prev,
@@ -79,10 +80,14 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const openProject = useCallback(async (id: string) => {
-    const project = await storage.getProject(id);
-    if (project) {
+    const stored = await storage.getProject(id);
+    if (stored) {
+      // Projects from before layers were automatic may have none; give them one to record into
+      const project = stored.layers.length > 0
+        ? stored
+        : { ...stored, layers: [storage.createLayer('guitar')] };
       setCurrentProject(project);
-      setSelectedLayerId(project.layers[0]?.id ?? null);
+      setSelectedLayerId(project.layers[0].id);
     }
   }, []);
 
@@ -104,16 +109,21 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addLayer = useCallback((instrument: Instrument) => {
-    const newLayer: Layer = {
-      id: crypto.randomUUID(),
-      instrument,
-      octaveShift: 0,
-      notes: [],
-    };
+    const newLayer: Layer = storage.createLayer(instrument);
     setCurrentProject((prev) =>
       prev ? { ...prev, layers: [...prev.layers, newLayer] } : null
     );
     setSelectedLayerId(newLayer.id);
+  }, []);
+
+  const setLayerInstrument = useCallback((layerId: string, instrument: Instrument) => {
+    setCurrentProject((prev) => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        layers: prev.layers.map((l) => (l.id === layerId ? { ...l, instrument } : l)),
+      };
+    });
   }, []);
 
   const selectLayer = useCallback((layerId: string) => {
@@ -196,6 +206,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         deleteProject,
         updateCurrentProject,
         addLayer,
+        setLayerInstrument,
         selectLayer,
         deleteLayer,
         updateLayerNotes,

@@ -44,9 +44,9 @@ export function TopBar({ notationContainerRef }: Props) {
             <button
               onClick={handleClose}
               className="text-ink-muted hover:text-ink transition-colors text-sm shrink-0"
-              title="Back to projects"
+              title="Back to your melodies"
             >
-              ← Projects
+              ← Melodies
             </button>
             {editing ? (
               <input
@@ -60,10 +60,13 @@ export function TopBar({ notationContainerRef }: Props) {
             ) : (
               <button
                 onClick={startEdit}
-                className="text-ink font-semibold text-sm truncate hover:text-primary-strong transition-colors"
-                title="Click to rename"
+                className="flex items-center gap-1.5 min-w-0 text-ink font-semibold text-sm hover:text-primary-strong transition-colors"
+                title="Rename"
               >
-                {currentProject.name}
+                <span className="truncate">{currentProject.name}</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0 text-ink-muted">
+                  <path d="M4 20h4L19 9l-4-4L4 16z" />
+                </svg>
               </button>
             )}
           </div>

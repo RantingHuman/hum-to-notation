@@ -4,6 +4,7 @@ import { useProjectContext } from '../context/ProjectContext';
 import { BrowserWarning } from './BrowserWarning';
 import { LoadingSpinner } from './common/LoadingSpinner';
 import { checkBrowserSupport } from '../utils/browserCompat';
+import { nextUntitledName } from '../utils/projectNames';
 
 const browserSupport = checkBrowserSupport(); // run once at module load
 
@@ -11,22 +12,20 @@ export function ProjectDashboard() {
   const { projectList, isLoading, createProject, deleteProject } =
     useProjectContext();
   const navigate = useNavigate();
-  const [newName, setNewName] = useState('');
   const [creating, setCreating] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [warningDismissed, setWarningDismissed] = useState(false);
 
+  // No naming step: new melodies get "Untitled melody N" and can be renamed in the workspace
   const handleCreate = async () => {
-    const name = newName.trim() || 'Untitled Project';
-    setCreating(false);
-    setNewName('');
-    const project = await createProject(name);
-    if (project) navigate(`/project/${project.id}`);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') handleCreate();
-    if (e.key === 'Escape') { setCreating(false); setNewName(''); }
+    if (creating) return;
+    setCreating(true);
+    try {
+      const project = await createProject(nextUntitledName(projectList.map((p) => p.name)));
+      navigate(`/project/${project.id}`);
+    } finally {
+      setCreating(false);
+    }
   };
 
   if (isLoading) {
@@ -62,58 +61,32 @@ export function ProjectDashboard() {
         {(warningDismissed || browserSupport.warnings.length === 0) && (
           <div className="bg-amber-soft border border-amber rounded-lg px-4 py-3 mb-6 text-ink text-sm flex gap-2">
             <span>⚠️</span>
-            <span>Projects are saved in your browser only. Export to keep a permanent copy.</span>
+            <span>Melodies are saved in this browser only. Export to keep a permanent copy.</span>
           </div>
         )}
 
-        {/* Create new project */}
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-display text-ink font-semibold text-lg">Your Projects</h2>
-          {!creating && (
-            <button
-              onClick={() => setCreating(true)}
-              className="bg-primary hover:bg-primary-strong active:bg-primary-strong text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px]"
-            >
-              + New Project
-            </button>
-          )}
-        </div>
+        <button
+          onClick={handleCreate}
+          disabled={creating}
+          className="w-full flex items-center justify-center gap-3 min-h-18 mb-8 rounded-2xl bg-primary hover:bg-primary-strong active:scale-[0.99] disabled:opacity-60 text-white font-display text-xl font-semibold shadow-[0_6px_18px_rgba(185,84,47,0.25)] transition-all"
+        >
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <rect x="9" y="3" width="6" height="11" rx="3" />
+            <path d="M5 11a7 7 0 0 0 14 0" />
+            <path d="M12 18v3" />
+          </svg>
+          Hum a new melody
+        </button>
 
-        {creating && (
-          <div className="bg-surface rounded-lg p-4 mb-4 border border-peach">
-            <input
-              autoFocus
-              type="text"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Project name..."
-              className="w-full bg-surface-muted text-ink px-3 py-2 rounded border border-line focus:border-peach focus:outline-none mb-3"
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={handleCreate}
-                className="bg-primary hover:bg-primary-strong text-white px-4 py-2 rounded text-sm font-medium transition-colors min-h-[44px]"
-              >
-                Create
-              </button>
-              <button
-                onClick={() => { setCreating(false); setNewName(''); }}
-                className="bg-surface-muted hover:bg-surface-strong text-ink px-4 py-2 rounded text-sm transition-colors min-h-[44px]"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
+        {projectList.length > 0 && (
+          <h2 className="font-display text-ink font-semibold text-lg mb-3">Your melodies</h2>
         )}
 
         {/* Project list */}
         {projectList.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="text-6xl mb-4">🎵</div>
-            <p className="text-ink-muted text-lg mb-2">No projects yet</p>
-            <p className="text-ink-muted text-sm">Create one to start recording your melody!</p>
-          </div>
+          <p className="text-center text-ink-muted py-8">
+            Your melodies will appear here.
+          </p>
         ) : (
           <div className="space-y-3">
             {projectList.map((project) => (

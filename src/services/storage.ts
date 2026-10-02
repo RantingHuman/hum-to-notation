@@ -1,5 +1,6 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
-import type { Project, ProjectSummary } from '../types/project';
+import type { Layer, Project, ProjectSummary } from '../types/project';
+import type { Instrument } from '../types/music';
 
 interface HumDB extends DBSchema {
   projects: {
@@ -37,6 +38,11 @@ function wrapQuotaError(err: unknown): never {
   throw err;
 }
 
+export function createLayer(instrument: Instrument): Layer {
+  return { id: crypto.randomUUID(), instrument, octaveShift: 0, notes: [] };
+}
+
+/** New projects start with a guitar layer so recording is one tap away. */
 export async function createProject(name: string): Promise<Project> {
   const now = new Date().toISOString();
   const project: Project = {
@@ -47,7 +53,7 @@ export async function createProject(name: string): Promise<Project> {
     metronomeMode: 'visual',
     createdAt: now,
     updatedAt: now,
-    layers: [],
+    layers: [createLayer('guitar')],
   };
   await getDB().add('projects', project).catch(wrapQuotaError);
   return project;

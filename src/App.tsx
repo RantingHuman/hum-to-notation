@@ -7,10 +7,9 @@ import { ToastProvider } from './context/ToastContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ProjectDashboard } from './components/ProjectDashboard';
 import { TopBar } from './components/layout/TopBar';
-import { ControlsArea } from './components/layout/ControlsArea';
 import { NotationDisplay } from './components/layout/NotationDisplay';
-import { LayerPanel } from './components/layout/LayerPanel';
-import { RecordButton } from './components/layout/RecordButton';
+import { RecordOverlays } from './components/layout/RecordButton';
+import { WorkspaceToolbar } from './components/layout/WorkspaceToolbar';
 import { LoadingSpinner } from './components/common/LoadingSpinner';
 
 function Workspace() {
@@ -19,14 +18,11 @@ function Workspace() {
   return (
     <RecordingProvider>
       <PlaybackProvider>
-        <div className="min-h-screen bg-canvas flex flex-col">
+        <div className="h-dvh bg-canvas flex flex-col">
           <TopBar notationContainerRef={notationContainerRef} />
-          <ControlsArea />
-          <div className="flex-1 flex flex-col md:flex-row overflow-hidden" style={{ minHeight: 0 }}>
-            <NotationDisplay notationContainerRef={notationContainerRef} />
-            <LayerPanel />
-          </div>
-          <RecordButton />
+          <WorkspaceToolbar />
+          <NotationDisplay notationContainerRef={notationContainerRef} />
+          <RecordOverlays />
         </div>
       </PlaybackProvider>
     </RecordingProvider>

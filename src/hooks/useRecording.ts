@@ -77,12 +77,14 @@ export function useRecording() {
 
     try {
       const notes = quantizeToNotes(rawEvents, project.tempo, project.timeSignature);
+      setError(null);
       if (notes.filter((n) => !n.isRest).length === 0) {
+        // Keep the previous take: a failed redo shouldn't wipe a good one
         showToast(`No notes detected. ${explainEmptyRecording(rawEvents, input)}`, 'warning');
         console.info('Empty recording diagnostics:', { ...getRecordingStats(rawEvents), input });
+      } else {
+        updateLayerNotes(layerId, notes, rawEvents);
       }
-      setError(null);
-      updateLayerNotes(layerId, notes, rawEvents);
     } catch {
       showToast('Processing failed. Please try recording again.', 'error');
     }
