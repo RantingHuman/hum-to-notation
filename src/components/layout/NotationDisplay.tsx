@@ -24,11 +24,11 @@ export function NotationDisplay({ notationContainerRef }: Props) {
   if (!currentProject) return null;
 
   return (
-    <div className="flex-1 bg-gray-900 flex flex-col min-h-0 overflow-hidden">
+    <div className="flex-1 bg-canvas flex flex-col min-h-0 overflow-hidden">
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-700 shrink-0">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-line shrink-0">
         <ViewToggle view={view} onChange={setView} />
-        <span className="text-gray-500 text-xs hidden sm:block">
+        <span className="text-ink-muted text-xs hidden sm:block">
           Scroll horizontally to see more →
         </span>
       </div>
@@ -40,7 +40,7 @@ export function NotationDisplay({ notationContainerRef }: Props) {
       >
         <Suspense fallback={
           <div className="flex items-center justify-center py-16">
-            <LoadingSpinner size="md" color="border-gray-400" />
+            <LoadingSpinner size="md" color="border-line-strong" />
           </div>
         }>
           {view === 'sheet' ? <SheetMusicView /> : <TabView />}

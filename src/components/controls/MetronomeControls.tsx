@@ -13,14 +13,14 @@ export function MetronomeControls() {
 
   return (
     <div className="space-y-1.5">
-      <p className="text-gray-400 text-xs uppercase tracking-wide font-medium">Metronome</p>
+      <p className="text-ink-muted text-xs uppercase tracking-wide font-medium">Metronome</p>
       <div className="flex items-center gap-1.5 flex-wrap">
         <button
           onClick={() => setMetronomeMode('visual')}
           className={`px-2 py-1 rounded text-xs transition-colors min-h-[32px] ${
             mode === 'visual'
-              ? 'bg-purple-600 text-white'
-              : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              ? 'bg-primary text-white'
+              : 'bg-surface-muted text-ink hover:bg-surface-strong'
           }`}
         >
           👁 Visual
@@ -29,8 +29,8 @@ export function MetronomeControls() {
           onClick={() => setMetronomeMode('audio')}
           className={`px-2 py-1 rounded text-xs transition-colors min-h-[32px] ${
             mode === 'audio'
-              ? 'bg-purple-600 text-white'
-              : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              ? 'bg-primary text-white'
+              : 'bg-surface-muted text-ink hover:bg-surface-strong'
           }`}
         >
           🎧 Audio
@@ -40,8 +40,8 @@ export function MetronomeControls() {
           onClick={isPlaying ? stop : start}
           className={`px-3 py-1 rounded text-xs font-medium transition-colors min-h-[32px] ${
             isPlaying
-              ? 'bg-red-600 hover:bg-red-700 text-white'
-              : 'bg-green-700 hover:bg-green-600 text-white'
+              ? 'bg-danger hover:bg-danger-strong text-white'
+              : 'bg-success hover:bg-success-strong text-white'
           }`}
         >
           {isPlaying ? '■ Stop' : '▶ Test'}
@@ -58,9 +58,9 @@ export function MetronomeControls() {
                 className={`rounded-full transition-all duration-75 ${
                   isActive
                     ? isDown
-                      ? 'w-4 h-4 bg-purple-400 shadow-[0_0_6px_rgba(192,132,252,0.8)]'
-                      : 'w-3.5 h-3.5 bg-green-400'
-                    : 'w-3 h-3 bg-gray-600'
+                      ? 'w-4 h-4 bg-peach shadow-[0_0_6px_rgba(222,124,90,0.7)]'
+                      : 'w-3.5 h-3.5 bg-amber'
+                    : 'w-3 h-3 bg-line-strong'
                 }`}
               />
             );
@@ -69,7 +69,7 @@ export function MetronomeControls() {
       </div>
 
       {mode === 'audio' && (
-        <p className="text-yellow-400 text-xs flex items-center gap-1">
+        <p className="text-ink-muted text-xs flex items-center gap-1">
           🎧 Use headphones to prevent mic feedback during recording
         </p>
       )}

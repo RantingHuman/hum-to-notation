@@ -12,7 +12,7 @@ export function TimeSignatureSelector() {
 
   return (
     <div className="space-y-1.5">
-      <p className="text-gray-400 text-xs uppercase tracking-wide font-medium">Time Signature</p>
+      <p className="text-ink-muted text-xs uppercase tracking-wide font-medium">Time Signature</p>
       <div className="flex items-center gap-1.5 flex-wrap">
         {TIME_SIGNATURE_OPTIONS.map((opt) => (
           <button
@@ -21,8 +21,8 @@ export function TimeSignatureSelector() {
             title={opt.label}
             className={`px-3 py-1 rounded text-xs transition-colors min-h-[32px] ${
               timeSigEqual(current, opt.value)
-                ? 'bg-purple-600 text-white'
-                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                ? 'bg-primary text-white'
+                : 'bg-surface-muted text-ink hover:bg-surface-strong'
             }`}
           >
             <span className="font-semibold">{opt.display}</span>{' '}

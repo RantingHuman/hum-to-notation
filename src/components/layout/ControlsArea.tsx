@@ -9,12 +9,12 @@ export function ControlsArea() {
   if (!currentProject) return null;
 
   return (
-    <div className="bg-gray-800 border-b border-gray-700 px-4 py-3">
+    <div className="bg-surface border-b border-line px-4 py-3">
       <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
         <TempoControls />
-        <div className="hidden sm:block w-px bg-gray-700 self-stretch" />
+        <div className="hidden sm:block w-px bg-surface-muted self-stretch" />
         <TimeSignatureSelector />
-        <div className="hidden sm:block w-px bg-gray-700 self-stretch" />
+        <div className="hidden sm:block w-px bg-surface-muted self-stretch" />
         <MetronomeControls />
       </div>
     </div>

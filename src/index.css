@@ -1,9 +1,58 @@
 @import "tailwindcss";
 
+/*
+ * Theme tokens. Components use these role names (bg-surface, text-ink,
+ * bg-primary, ...) rather than raw palette colours, so the look can be
+ * changed here in one place.
+ *
+ * Palette: frozen water #ddfff7, charcoal #50514f, bright amber #ffd131,
+ * burnt peach #de7c5a, cherry blossom #fbb7c0. Burnt peach is too light for
+ * white text (2.9:1), so filled buttons use a deeper shade of it.
+ */
+@theme {
+  --font-sans: "Nunito", ui-rounded, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Fredoka", "Nunito", ui-rounded, system-ui, sans-serif;
+
+  /* Surfaces */
+  --color-canvas: #f4fffc;
+  --color-frost: #ddfff7;
+  --color-surface: #ffffff;
+  --color-surface-muted: #eefaf6;
+  --color-surface-strong: #dcefe9;
+  --color-line: #d3e4df;
+  --color-line-strong: #b5cbc4;
+
+  /* Text */
+  --color-ink: #50514f;
+  --color-ink-muted: #6b6c69;
+
+  /* Actions and accents */
+  --color-primary: #b9542f;
+  --color-primary-strong: #a94b2a;
+  --color-peach: #de7c5a;
+  --color-amber: #ffd131;
+  --color-amber-strong: #f2c014;
+  --color-amber-soft: #fff4c7;
+  --color-blossom: #fbb7c0;
+  --color-blossom-soft: #fde7ea;
+
+  /* Status */
+  --color-danger: #c8463d;
+  --color-danger-strong: #a93a32;
+  --color-danger-soft: #fde4e1;
+  --color-success: #277a65;
+  --color-success-strong: #1f6352;
+  --color-success-soft: #dcf5ee;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
+  font-family: var(--font-sans);
+  color: var(--color-ink);
+  background: var(--color-canvas);
+  -webkit-font-smoothing: antialiased;
 }

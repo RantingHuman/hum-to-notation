@@ -19,7 +19,7 @@ function Workspace() {
   return (
     <RecordingProvider>
       <PlaybackProvider>
-        <div className="min-h-screen bg-gray-900 flex flex-col">
+        <div className="min-h-screen bg-canvas flex flex-col">
           <TopBar notationContainerRef={notationContainerRef} />
           <ControlsArea />
           <div className="flex-1 flex flex-col md:flex-row overflow-hidden" style={{ minHeight: 0 }}>
@@ -47,7 +47,7 @@ function ProjectRoute() {
 
   if (isLoading || (id && !currentProject)) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
         <LoadingSpinner />
       </div>
     );

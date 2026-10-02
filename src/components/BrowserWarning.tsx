@@ -14,8 +14,8 @@ export function BrowserWarning({ support, onDismiss }: Props) {
     <div
       className={`border rounded-lg px-4 py-3 mb-4 text-sm flex gap-3 items-start ${
         isBlocking
-          ? 'bg-red-900/60 border-red-700 text-red-200'
-          : 'bg-yellow-900/40 border-yellow-700 text-yellow-200'
+          ? 'bg-danger-soft border-danger text-danger-strong'
+          : 'bg-amber-soft border-amber text-ink'
       }`}
     >
       <span className="text-xl shrink-0">{isBlocking ? '🚫' : '⚠️'}</span>
@@ -29,7 +29,7 @@ export function BrowserWarning({ support, onDismiss }: Props) {
           <p key={i}>{w}</p>
         ))}
         {!isBlocking && (
-          <p className="text-yellow-300 text-xs mt-1">
+          <p className="text-ink text-xs mt-1">
             For the best experience, use <strong>Chrome</strong> or <strong>Edge</strong> on desktop.
           </p>
         )}
@@ -37,7 +37,7 @@ export function BrowserWarning({ support, onDismiss }: Props) {
       {!isBlocking && onDismiss && (
         <button
           onClick={onDismiss}
-          className="text-yellow-400 hover:text-yellow-200 shrink-0 transition-colors"
+          className="text-ink-muted hover:text-ink shrink-0 transition-colors"
           aria-label="Dismiss"
         >
           ✕

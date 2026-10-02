@@ -42,7 +42,7 @@ export const TabView = memo(function TabView() {
         <div className="flex-1 flex items-center justify-center py-16">
           <div className="text-center">
             <div className="text-5xl mb-3">🎸</div>
-            <p className="text-gray-400 text-sm">
+            <p className="text-ink-muted text-sm">
               {!selectedLayer
                 ? 'Select a layer to see its tab'
                 : 'Record a melody to see tab notation here'}

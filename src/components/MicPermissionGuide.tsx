@@ -39,21 +39,21 @@ export function MicPermissionGuide({ onDismiss }: Props) {
   const steps = INSTRUCTIONS[browser];
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-800 rounded-xl p-6 max-w-sm w-full border border-gray-600 shadow-2xl">
+    <div className="fixed inset-0 bg-ink/40 flex items-center justify-center z-50 p-4">
+      <div className="bg-surface rounded-xl p-6 max-w-sm w-full border border-line shadow-2xl">
         <div className="text-4xl mb-3 text-center">🎤</div>
-        <h2 className="text-white font-bold text-lg text-center mb-2">
+        <h2 className="font-display text-ink font-semibold text-lg text-center mb-2">
           Microphone Access Required
         </h2>
-        <p className="text-gray-400 text-sm text-center mb-5">
+        <p className="text-ink-muted text-sm text-center mb-5">
           Hum to Notation needs your microphone to detect pitches. Please allow
           access and try again.
         </p>
 
         <ol className="space-y-2 mb-6">
           {steps.map((step, i) => (
-            <li key={i} className="flex gap-3 text-sm text-gray-300">
-              <span className="bg-purple-600 text-white rounded-full w-5 h-5 flex items-center justify-center shrink-0 text-xs font-bold">
+            <li key={i} className="flex gap-3 text-sm text-ink">
+              <span className="bg-primary text-white rounded-full w-5 h-5 flex items-center justify-center shrink-0 text-xs font-bold">
                 {i + 1}
               </span>
               {step}
@@ -63,7 +63,7 @@ export function MicPermissionGuide({ onDismiss }: Props) {
 
         <button
           onClick={onDismiss}
-          className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2.5 rounded-lg font-medium transition-colors"
+          className="w-full bg-primary hover:bg-primary-strong text-white py-2.5 rounded-lg font-medium transition-colors"
         >
           Got it
         </button>

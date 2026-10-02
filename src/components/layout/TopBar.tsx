@@ -37,13 +37,13 @@ export function TopBar({ notationContainerRef }: Props) {
   };
 
   return (
-    <header className="bg-gray-900 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-10 shadow-lg border-b border-gray-700">
+    <header className="bg-canvas text-ink px-4 py-3 flex items-center justify-between sticky top-0 z-10 shadow-lg border-b border-line">
       {currentProject ? (
         <>
           <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={handleClose}
-              className="text-gray-400 hover:text-white transition-colors text-sm shrink-0"
+              className="text-ink-muted hover:text-ink transition-colors text-sm shrink-0"
               title="Back to projects"
             >
               ← Projects
@@ -55,12 +55,12 @@ export function TopBar({ notationContainerRef }: Props) {
                 onChange={(e) => setNameInput(e.target.value)}
                 onBlur={commitEdit}
                 onKeyDown={handleKeyDown}
-                className="bg-gray-700 text-white px-2 py-0.5 rounded border border-purple-500 focus:outline-none text-sm font-semibold min-w-0 w-40"
+                className="bg-surface-muted text-ink px-2 py-0.5 rounded border border-peach focus:outline-none text-sm font-semibold min-w-0 w-40"
               />
             ) : (
               <button
                 onClick={startEdit}
-                className="text-white font-semibold text-sm truncate hover:text-purple-300 transition-colors"
+                className="text-ink font-semibold text-sm truncate hover:text-primary-strong transition-colors"
                 title="Click to rename"
               >
                 {currentProject.name}
@@ -68,12 +68,12 @@ export function TopBar({ notationContainerRef }: Props) {
             )}
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-xs text-gray-500 hidden sm:block">Auto-saved</span>
+            <span className="text-xs text-ink-muted hidden sm:block">Auto-saved</span>
             <ExportMenu notationContainerRef={notationContainerRef} />
           </div>
         </>
       ) : (
-        <h1 className="text-xl font-bold text-purple-400">🎵 Hum to Notation</h1>
+        <h1 className="font-display text-xl font-semibold text-primary">🎵 Hum to Notation</h1>
       )}
     </header>
   );

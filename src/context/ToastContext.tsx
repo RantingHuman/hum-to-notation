@@ -22,10 +22,10 @@ const ICONS: Record<ToastType, string> = {
 };
 
 const COLORS: Record<ToastType, string> = {
-  success: 'bg-green-800 border-green-600 text-green-100',
-  error:   'bg-red-800 border-red-600 text-red-100',
-  warning: 'bg-yellow-800 border-yellow-600 text-yellow-100',
-  info:    'bg-gray-700 border-gray-500 text-gray-100',
+  success: 'bg-success-soft border-success text-success-strong',
+  error:   'bg-danger-soft border-danger text-danger-strong',
+  warning: 'bg-amber-soft border-amber text-ink',
+  info:    'bg-surface-muted border-line-strong text-ink',
 };
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {

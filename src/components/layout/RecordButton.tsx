@@ -41,15 +41,15 @@ export function RecordButton() {
 
       {/* Error toast */}
       {error && (
-        <div className="fixed bottom-28 left-1/2 -translate-x-1/2 z-30 bg-red-800 border border-red-600 text-white text-sm px-4 py-2.5 rounded-lg shadow-lg max-w-xs text-center">
+        <div className="fixed bottom-28 left-1/2 -translate-x-1/2 z-30 bg-danger-soft border border-danger text-ink text-sm px-4 py-2.5 rounded-lg shadow-lg max-w-xs text-center">
           {error}
-          <button onClick={dismissError} className="ml-3 text-red-300 hover:text-white">✕</button>
+          <button onClick={dismissError} className="ml-3 text-danger hover:text-ink">✕</button>
         </div>
       )}
 
       {/* "Add a layer first" hint when disabled */}
       {isIdle && noLayer && (
-        <div className="fixed bottom-28 left-1/2 -translate-x-1/2 z-20 bg-gray-800 border border-gray-600 text-gray-300 text-xs px-3 py-1.5 rounded-full shadow-lg whitespace-nowrap">
+        <div className="fixed bottom-28 left-1/2 -translate-x-1/2 z-20 bg-surface border border-line text-ink text-xs px-3 py-1.5 rounded-full shadow-lg whitespace-nowrap">
           Add a layer (→) to enable recording
         </div>
       )}
@@ -61,10 +61,10 @@ export function RecordButton() {
 
       {/* Countdown overlay */}
       {isCountdown && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-30 pointer-events-none">
-          <div className="text-center">
-            <p className="text-gray-300 text-lg mb-2">Get ready…</p>
-            <div className="text-8xl font-bold text-purple-400 animate-pulse">
+        <div className="fixed inset-0 bg-ink/15 flex items-center justify-center z-30 pointer-events-none">
+          <div className="text-center bg-surface rounded-3xl px-12 py-6 shadow-xl border border-line">
+            <p className="text-ink-muted text-lg mb-1">Get ready…</p>
+            <div className="font-display text-8xl font-semibold text-primary animate-pulse">
               {countdownBeat || ''}
             </div>
           </div>
@@ -75,10 +75,10 @@ export function RecordButton() {
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2">
         {/* Recording status bar */}
         {isRecording && (
-          <div className="bg-gray-900/90 border border-red-500 rounded-full px-4 py-1.5 flex items-center gap-2 text-sm">
-            <span className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />
-            <span className="text-white font-mono">{formatTime(elapsedMs)}</span>
-            <span className="text-gray-400">/ 2:00</span>
+          <div className="bg-surface/95 border border-danger rounded-full px-4 py-1.5 flex items-center gap-2 text-sm">
+            <span className="w-2.5 h-2.5 bg-danger rounded-full animate-pulse" />
+            <span className="text-ink font-mono">{formatTime(elapsedMs)}</span>
+            <span className="text-ink-muted">/ 2:00</span>
           </div>
         )}
 
@@ -89,8 +89,8 @@ export function RecordButton() {
             title={noLayer ? 'Add a layer first' : 'Start recording'}
             className={`w-16 h-16 rounded-full flex items-center justify-center shadow-2xl border-4 transition-all
               ${noLayer
-                ? 'bg-gray-700 border-gray-600 cursor-not-allowed opacity-50'
-                : 'bg-red-600 hover:bg-red-700 active:scale-95 border-red-400'
+                ? 'bg-surface-muted border-line cursor-not-allowed opacity-50'
+                : 'bg-danger hover:bg-danger-strong active:scale-95 border-danger'
               }`}
             aria-label="Record"
           >
@@ -99,15 +99,15 @@ export function RecordButton() {
         ) : isRecording ? (
           <button
             onClick={stopRecording}
-            className="w-16 h-16 bg-red-600 hover:bg-red-700 active:scale-95 rounded-full flex items-center justify-center shadow-2xl border-4 border-red-400 transition-all animate-pulse"
+            className="w-16 h-16 bg-danger hover:bg-danger-strong active:scale-95 rounded-full flex items-center justify-center shadow-2xl border-4 border-danger transition-all animate-pulse"
             aria-label="Stop recording"
           >
             <span className="w-5 h-5 bg-white rounded-sm" />
           </button>
         ) : (
           // Countdown or processing — non-interactive
-          <div className="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center shadow-2xl border-4 border-gray-500 opacity-60">
-            <span className="w-6 h-6 bg-gray-400 rounded-full" />
+          <div className="w-16 h-16 bg-surface-muted rounded-full flex items-center justify-center shadow-2xl border-4 border-line-strong opacity-60">
+            <span className="w-6 h-6 bg-line-strong rounded-full" />
           </div>
         )}
       </div>

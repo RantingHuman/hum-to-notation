@@ -100,17 +100,17 @@ export function NoteEditor() {
   };
 
   return (
-    <section className="bg-gray-800 border-t border-gray-700 px-3 py-3 shrink-0">
+    <section className="bg-surface border-t border-line px-3 py-3 shrink-0">
       <div className="flex items-center justify-between gap-3 mb-2">
         <div>
-          <h2 className="text-white text-sm font-semibold">Review notes</h2>
-          <p className="text-gray-500 text-xs">Correct pitch and timing before export</p>
+          <h2 className="font-display text-ink text-base font-semibold">Review notes</h2>
+          <p className="text-ink-muted text-xs">Correct pitch and timing before export</p>
         </div>
         <div className="flex items-center gap-1.5">
           <button
             onClick={handleUndo}
             disabled={history.past.length === 0}
-            className="bg-gray-700 hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs px-2 py-1.5 rounded min-h-8"
+            className="bg-surface-muted hover:bg-surface-strong disabled:opacity-40 disabled:cursor-not-allowed text-ink text-xs px-2 py-1.5 rounded min-h-8"
             title="Undo last note edit"
           >
             Undo
@@ -118,7 +118,7 @@ export function NoteEditor() {
           <button
             onClick={handleRedo}
             disabled={history.future.length === 0}
-            className="bg-gray-700 hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs px-2 py-1.5 rounded min-h-8"
+            className="bg-surface-muted hover:bg-surface-strong disabled:opacity-40 disabled:cursor-not-allowed text-ink text-xs px-2 py-1.5 rounded min-h-8"
             title="Redo note edit"
           >
             Redo
@@ -126,7 +126,7 @@ export function NoteEditor() {
           <button
             onClick={handleRetranscribe}
             disabled={!canRetranscribe}
-            className="bg-gray-700 hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs px-2 py-1.5 rounded min-h-8"
+            className="bg-surface-muted hover:bg-surface-strong disabled:opacity-40 disabled:cursor-not-allowed text-ink text-xs px-2 py-1.5 rounded min-h-8"
             title={
               canRetranscribe
                 ? 'Rebuild notes from the last recording using the current tempo and time signature (undoable)'
@@ -137,7 +137,7 @@ export function NoteEditor() {
           </button>
           <button
             onClick={handleAddNote}
-            className="bg-purple-600 hover:bg-purple-700 text-white text-xs px-3 py-1.5 rounded min-h-8"
+            className="bg-primary hover:bg-primary-strong text-white text-xs px-3 py-1.5 rounded min-h-8"
           >
             + Add note
           </button>
@@ -145,11 +145,11 @@ export function NoteEditor() {
       </div>
 
       {notes.length === 0 ? (
-        <p className="text-gray-400 text-xs py-2">No notes yet. Add one manually or record a layer.</p>
+        <p className="text-ink-muted text-xs py-2">No notes yet. Add one manually or record a layer.</p>
       ) : (
         <div className="overflow-x-auto max-h-52">
           <div className="min-w-160 space-y-1">
-            <div className="grid grid-cols-[2.5rem_5rem_6rem_6rem_1fr] gap-2 px-2 text-gray-500 text-[10px] uppercase tracking-wide">
+            <div className="grid grid-cols-[2.5rem_5rem_6rem_6rem_1fr] gap-2 px-2 text-ink-muted text-[10px] uppercase tracking-wide">
               <span>#</span>
               <span>Pitch</span>
               <span>Start beat</span>
@@ -164,11 +164,11 @@ export function NoteEditor() {
                   key={`${note.startBeat}-${index}`}
                   onClick={() => setSelectedIndex(index)}
                   className={`grid grid-cols-[2.5rem_5rem_6rem_6rem_1fr] items-center gap-2 rounded px-2 py-1.5 text-xs cursor-pointer ${
-                    isSelected ? 'bg-purple-900/50 ring-1 ring-purple-500' : 'bg-gray-700/70 hover:bg-gray-700'
+                    isSelected ? 'bg-blossom-soft ring-1 ring-peach' : 'bg-surface-muted hover:bg-surface-muted'
                   }`}
                 >
-                  <span className="text-gray-400">{index + 1}</span>
-                  <span className={isRest ? 'text-gray-400' : 'text-white font-medium'}>
+                  <span className="text-ink-muted">{index + 1}</span>
+                  <span className={isRest ? 'text-ink-muted' : 'text-ink font-medium'}>
                     {isRest ? 'Rest' : midiToNoteName(note.midiNumber)}
                   </span>
                   <input
@@ -179,7 +179,7 @@ export function NoteEditor() {
                     onChange={(event) => changeNote(index, { startBeat: Number(event.target.value) })}
                     onClick={(event) => event.stopPropagation()}
                     aria-label={`Start beat for note ${index + 1}`}
-                    className="w-20 bg-gray-900 text-white border border-gray-600 rounded px-1.5 py-1 focus:border-purple-500 focus:outline-none"
+                    className="w-20 bg-canvas text-ink border border-line rounded px-1.5 py-1 focus:border-peach focus:outline-none"
                   />
                   <input
                     type="number"
@@ -189,7 +189,7 @@ export function NoteEditor() {
                     onChange={(event) => changeNote(index, { durationBeats: Number(event.target.value) })}
                     onClick={(event) => event.stopPropagation()}
                     aria-label={`Duration for note ${index + 1}`}
-                    className="w-20 bg-gray-900 text-white border border-gray-600 rounded px-1.5 py-1 focus:border-purple-500 focus:outline-none"
+                    className="w-20 bg-canvas text-ink border border-line rounded px-1.5 py-1 focus:border-peach focus:outline-none"
                   />
                   <div className="flex items-center gap-1">
                     <button
@@ -198,7 +198,7 @@ export function NoteEditor() {
                         changeNote(index, { midiNumber: note.midiNumber - 1 });
                       }}
                       disabled={isRest}
-                      className="w-7 h-7 rounded bg-gray-600 hover:bg-gray-500 disabled:opacity-30 text-white"
+                      className="w-7 h-7 rounded bg-surface-strong hover:bg-line disabled:opacity-30 text-ink"
                       title="Lower pitch by one semitone"
                       aria-label={`Lower pitch for note ${index + 1}`}
                     >
@@ -210,7 +210,7 @@ export function NoteEditor() {
                         changeNote(index, { midiNumber: note.midiNumber + 1 });
                       }}
                       disabled={isRest}
-                      className="w-7 h-7 rounded bg-gray-600 hover:bg-gray-500 disabled:opacity-30 text-white"
+                      className="w-7 h-7 rounded bg-surface-strong hover:bg-line disabled:opacity-30 text-ink"
                       title="Raise pitch by one semitone"
                       aria-label={`Raise pitch for note ${index + 1}`}
                     >
@@ -221,7 +221,7 @@ export function NoteEditor() {
                         event.stopPropagation();
                         handleDeleteNote(index);
                       }}
-                      className="w-7 h-7 rounded bg-gray-600 hover:bg-red-700 text-gray-300 hover:text-white"
+                      className="w-7 h-7 rounded bg-surface-strong hover:bg-danger-strong text-ink hover:text-white"
                       title="Delete note"
                       aria-label={`Delete note ${index + 1}`}
                     >

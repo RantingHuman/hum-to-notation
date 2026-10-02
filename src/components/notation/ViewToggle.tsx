@@ -7,13 +7,13 @@ interface Props {
 
 export function ViewToggle({ view, onChange }: Props) {
   return (
-    <div className="flex rounded-lg overflow-hidden border border-gray-600 text-sm">
+    <div className="flex rounded-lg overflow-hidden border border-line text-sm">
       <button
         onClick={() => onChange('sheet')}
         className={`px-4 py-1.5 transition-colors ${
           view === 'sheet'
-            ? 'bg-purple-600 text-white'
-            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+            ? 'bg-primary text-white'
+            : 'bg-surface-muted text-ink hover:bg-surface-strong'
         }`}
       >
         🎼 Sheet Music
@@ -22,8 +22,8 @@ export function ViewToggle({ view, onChange }: Props) {
         onClick={() => onChange('tab')}
         className={`px-4 py-1.5 transition-colors ${
           view === 'tab'
-            ? 'bg-purple-600 text-white'
-            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+            ? 'bg-primary text-white'
+            : 'bg-surface-muted text-ink hover:bg-surface-strong'
         }`}
       >
         🎸 Tab

@@ -12,14 +12,14 @@ interface Props {
 
 export function InstrumentSelector({ onSelect, onCancel }: Props) {
   return (
-    <div className="bg-gray-700 rounded-lg p-3 border border-purple-500 space-y-2">
-      <p className="text-gray-300 text-xs font-medium">Choose instrument:</p>
+    <div className="bg-surface-muted rounded-lg p-3 border border-peach space-y-2">
+      <p className="text-ink text-xs font-medium">Choose instrument:</p>
       <div className="flex gap-2">
         {INSTRUMENT_OPTIONS.map((opt) => (
           <button
             key={opt.value}
             onClick={() => onSelect(opt.value)}
-            className="flex-1 bg-gray-600 hover:bg-purple-700 text-white py-2 rounded text-sm transition-colors flex flex-col items-center gap-1"
+            className="flex-1 bg-surface-strong hover:bg-primary-strong text-ink py-2 rounded text-sm transition-colors flex flex-col items-center gap-1"
           >
             <span className="text-xl">{opt.icon}</span>
             <span className="text-xs">{opt.label}</span>
@@ -28,7 +28,7 @@ export function InstrumentSelector({ onSelect, onCancel }: Props) {
       </div>
       <button
         onClick={onCancel}
-        className="w-full text-gray-400 hover:text-white text-xs py-1 transition-colors"
+        className="w-full text-ink-muted hover:text-ink text-xs py-1 transition-colors"
       >
         Cancel
       </button>
