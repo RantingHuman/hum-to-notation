@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local Netlify drag-and-drop deploy files
+hum-to-notation-netlify.zip
+public/_redirects
